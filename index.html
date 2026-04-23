@@ -1,0 +1,1990 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>步态数组 WebGL 仿真工作台</title>
+    <style>
+      :root {
+        --bg: #0b1220;
+        --panel: #0f1a2c;
+        --panel2: #0c1628;
+        --text: #e5e7eb;
+        --muted: #9ca3af;
+        --border: #1f2937;
+        --accent: #f59e0b;
+        --accent2: #60a5fa;
+        --danger: #ef4444;
+        --ok: #10b981;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+          Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        background: var(--bg);
+        color: var(--text);
+        height: 100vh;
+        overflow: hidden;
+      }
+      a {
+        color: inherit;
+      }
+
+      .app {
+        height: 100vh;
+        display: grid;
+        grid-template-rows: 56px 1fr;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(15, 26, 44, 0.8);
+        backdrop-filter: blur(8px);
+      }
+      header .title {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+      }
+      header h1 {
+        font-size: 14px;
+        margin: 0;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+      }
+      header .subtitle {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: rgba(12, 22, 40, 0.9);
+        font-size: 12px;
+        color: var(--muted);
+        max-width: 52vw;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--muted);
+      }
+      .dot.ok {
+        background: var(--ok);
+      }
+      .dot.bad {
+        background: var(--danger);
+      }
+
+      .main {
+        height: calc(100vh - 56px);
+        display: grid;
+        grid-template-columns: 360px 1fr 400px;
+        gap: 12px;
+        padding: 12px;
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .panel .panel-hd {
+        padding: 12px 12px 10px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .panel .panel-hd h2 {
+        margin: 0;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+        color: var(--text);
+      }
+      .panel .panel-bd {
+        padding: 12px;
+        overflow: auto;
+        min-height: 0;
+      }
+      .muted {
+        color: var(--muted);
+      }
+
+      .btn {
+        appearance: none;
+        border: 1px solid var(--border);
+        background: #0d1a31;
+        color: var(--text);
+        padding: 8px 10px;
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 0.06s ease, filter 0.12s ease;
+        user-select: none;
+        white-space: nowrap;
+      }
+      .btn:hover {
+        filter: brightness(1.06);
+      }
+      .btn:active {
+        transform: translateY(1px);
+      }
+      .btn.primary {
+        background: rgba(245, 158, 11, 0.16);
+        border-color: rgba(245, 158, 11, 0.45);
+      }
+      .btn.ghost {
+        background: transparent;
+      }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 280px;
+        resize: vertical;
+        background: var(--panel2);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        color: var(--text);
+        padding: 10px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+          "Courier New", monospace;
+        font-size: 12px;
+        line-height: 1.5;
+        outline: none;
+      }
+      textarea:focus {
+        border-color: rgba(245, 158, 11, 0.6);
+      }
+
+      .row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .grid2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .kv {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px;
+        background: rgba(12, 22, 40, 0.6);
+      }
+      .kv .k {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .kv .v {
+        font-size: 18px;
+        font-weight: 800;
+        letter-spacing: 0.2px;
+        margin-top: 6px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+          "Courier New", monospace;
+      }
+
+      .alert {
+        border: 1px solid rgba(239, 68, 68, 0.45);
+        background: rgba(239, 68, 68, 0.08);
+        color: #fecaca;
+        padding: 10px;
+        border-radius: 10px;
+        font-size: 12px;
+        line-height: 1.45;
+      }
+      .help {
+        font-size: 12px;
+        line-height: 1.6;
+        color: var(--muted);
+      }
+      .help b {
+        color: var(--text);
+      }
+
+      .viewport {
+        position: relative;
+        background: #070b13;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .viewport .canvasWrap {
+        position: relative;
+        flex: 1;
+        min-height: 0;
+      }
+      #threeRoot {
+        position: absolute;
+        inset: 0;
+      }
+      .overlay {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        max-width: calc(100% - 20px);
+      }
+      .overlay .badge {
+        font-size: 12px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: rgba(12, 22, 40, 0.7);
+        color: var(--muted);
+      }
+      .overlay .badge b {
+        color: var(--accent);
+      }
+
+      .playbar {
+        border-top: 1px solid var(--border);
+        background: rgba(12, 22, 40, 0.65);
+        padding: 10px;
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 10px;
+        align-items: center;
+      }
+      .playbar .left,
+      .playbar .right {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .sliderWrap {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      input[type="range"] {
+        width: 100%;
+      }
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+          "Courier New", monospace;
+      }
+
+      .field {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        gap: 10px;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px dashed rgba(31, 41, 55, 0.8);
+      }
+      .field:last-child {
+        border-bottom: none;
+      }
+      .field label {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      select,
+      input[type="number"] {
+        width: 100%;
+        background: var(--panel2);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        color: var(--text);
+        padding: 8px 10px;
+        font-size: 12px;
+        outline: none;
+      }
+      select:focus,
+      input[type="number"]:focus {
+        border-color: rgba(245, 158, 11, 0.6);
+      }
+      .toggle {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        font-size: 12px;
+        color: var(--muted);
+        user-select: none;
+      }
+      .toggle input {
+        transform: translateY(1px);
+      }
+
+      .chart {
+        width: 100%;
+        height: 160px;
+        background: var(--panel2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+        position: relative;
+      }
+      #chartCanvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      .chartTip {
+        position: absolute;
+        pointer-events: none;
+        background: rgba(15, 26, 44, 0.92);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 8px 10px;
+        font-size: 12px;
+        color: var(--text);
+        transform: translate(8px, 8px);
+        display: none;
+        max-width: 220px;
+      }
+      .chartTip .t {
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .chartTip .v {
+        margin-top: 6px;
+        font-weight: 800;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+          "Courier New", monospace;
+      }
+
+      @media (max-width: 1100px) {
+        body {
+          overflow: auto;
+        }
+        .main {
+          grid-template-columns: 1fr;
+          grid-template-rows: auto 420px auto;
+          height: auto;
+        }
+        .viewport {
+          min-height: 420px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header>
+        <div class="title">
+          <h1>步态数组 WebGL 仿真工作台</h1>
+          <div class="subtitle">点击腿部可切换观测对象</div>
+        </div>
+        <div class="status-pill" id="statusPill">
+          <span class="dot" id="statusDot"></span>
+          <span id="statusText">等待解析数组…</span>
+        </div>
+        <button class="btn ghost" id="btnHelp">帮助与示例</button>
+      </header>
+
+      <div class="main">
+        <section class="panel" aria-label="数组输入与解析">
+          <div class="panel-hd">
+            <h2>数组输入与解析</h2>
+            <label class="toggle">
+              <input id="autoParse" type="checkbox" checked />
+              自动解析
+            </label>
+          </div>
+          <div class="panel-bd">
+            <div class="help" style="margin-bottom: 10px">
+              <b>支持格式：</b>直接 CSV、或类似 `const int8_t xxx[] PROGMEM = { ... }`。
+              <br />
+              <b>字段约定：</b>帧头 `frameCount, 0, 0, scale, 0, intervalMs`；每帧 10 个舵机角度（°）。
+            </div>
+            <textarea id="dataInput" spellcheck="false"></textarea>
+
+            <div class="row" style="margin-top: 10px">
+              <button class="btn primary" id="btnParse">解析</button>
+              <button class="btn" id="btnClear">清空</button>
+              <button class="btn" id="btnExample">填充示例</button>
+            </div>
+
+            <div id="parseError" style="margin-top: 10px; display: none"></div>
+
+            <div class="grid2" style="margin-top: 10px">
+              <div class="kv">
+                <div class="k">帧数</div>
+                <div class="v" id="kvFrames">-</div>
+              </div>
+              <div class="kv">
+                <div class="k">采样周期（ms）</div>
+                <div class="v" id="kvInterval">-</div>
+              </div>
+              <div class="kv">
+                <div class="k">通道数</div>
+                <div class="v" id="kvChannels">-</div>
+              </div>
+              <div class="kv">
+                <div class="k">缩放（scale）</div>
+                <div class="v" id="kvScale">-</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="viewport" aria-label="WebGL 仿真视窗">
+          <div class="canvasWrap">
+            <div id="threeRoot"></div>
+            <div class="overlay">
+              <div class="badge">
+                观测腿高度：<b id="legHeightBadge">-</b>
+              </div>
+              <div class="badge mono" id="frameBadge">Frame - / -</div>
+            </div>
+          </div>
+
+          <div class="playbar" aria-label="回放控制">
+            <div class="left">
+              <button class="btn primary" id="btnPlay">播放</button>
+              <button class="btn" id="btnStop">停止</button>
+              <label class="toggle">
+                <input id="loop" type="checkbox" checked />
+                循环
+              </label>
+            </div>
+            <div class="sliderWrap">
+              <input id="timeline" type="range" min="0" max="0" value="0" step="1" />
+              <div class="mono" style="min-width: 120px; text-align: right" id="timelineLabel">
+                0 / 0
+              </div>
+            </div>
+            <div class="right">
+              <select id="speed">
+                <option value="0.25">0.25x</option>
+                <option value="0.5">0.5x</option>
+                <option value="1" selected>1x</option>
+                <option value="2">2x</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" aria-label="腿高度观测与参数">
+          <div class="panel-hd">
+            <h2 id="legPanelTitle">观测腿：右后腿（BR）</h2>
+            <div class="row" style="justify-content: flex-end">
+              <select id="legSelect" style="width: 140px">
+                <option value="BR" selected>右后（BR）</option>
+                <option value="BL">左后（BL）</option>
+                <option value="FR">右前（FR）</option>
+                <option value="FL">左前（FL）</option>
+              </select>
+              <button class="btn" id="btnJumpPeak" disabled>跳转峰值帧</button>
+            </div>
+          </div>
+          <div class="panel-bd">
+            <div class="grid2">
+              <div class="kv">
+                <div class="k">当前高度（mm）</div>
+                <div class="v" id="kvNow">-</div>
+              </div>
+              <div class="kv">
+                <div class="k">峰值高度（mm）</div>
+                <div class="v" id="kvPeak">-</div>
+              </div>
+            </div>
+
+            <div style="margin-top: 12px">
+              <div class="help" style="margin-bottom: 8px">
+                曲线为“观测腿高度”随帧变化；点击曲线可定位帧。
+              </div>
+              <div class="chart" id="chartWrap">
+                <canvas id="chartCanvas"></canvas>
+                <div class="chartTip" id="chartTip"></div>
+              </div>
+            </div>
+
+            <div style="margin-top: 12px" class="panel" aria-label="负载估算">
+              <div class="panel-hd">
+                <h2>负载估算</h2>
+              </div>
+              <div class="panel-bd">
+                <div class="grid2">
+                  <div class="kv">
+                    <div class="k">本腿支撑力（N）</div>
+                    <div class="v" id="kvLegForce">-</div>
+                  </div>
+                  <div class="kv">
+                    <div class="k">支撑腿数量</div>
+                    <div class="v" id="kvSupportCount">-</div>
+                  </div>
+                  <div class="kv">
+                    <div class="k">大腿扭矩（N·m）</div>
+                    <div class="v" id="kvThighTau">-</div>
+                  </div>
+                  <div class="kv">
+                    <div class="k">小腿扭矩（N·m）</div>
+                    <div class="v" id="kvCalfTau">-</div>
+                  </div>
+                </div>
+                <div class="help" style="margin-top: 10px">
+                  估算为“准静态”负载：把机身重力分配到接触地面的腿，再按力臂估算关节扭矩；用于对比不同姿态下的吃力程度。
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top: 12px" class="panel" aria-label="参数" hidden></div>
+
+            <div style="margin-top: 12px" class="panel" aria-label="实时参数">
+              <div class="panel-hd">
+                <h2>实时参数</h2>
+                <button class="btn" id="btnReset">重置</button>
+              </div>
+              <div class="panel-bd">
+                <div class="field">
+                  <label for="interp">插值方式</label>
+                  <select id="interp">
+                    <option value="none">无</option>
+                    <option value="linear" selected>线性</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="smooth">平滑强度（0~0.9）</label>
+                  <input id="smooth" type="number" min="0" max="0.9" step="0.05" value="0.2" />
+                </div>
+                <div class="field">
+                  <label for="ground">地面偏置（mm）</label>
+                  <input id="ground" type="number" step="1" value="0" />
+                </div>
+                <div class="field">
+                  <label for="roughAmp">地面粗糙（mm）</label>
+                  <input id="roughAmp" type="number" min="0" step="0.5" value="0" />
+                </div>
+                <div class="field">
+                  <label for="roughFreq">粗糙频率</label>
+                  <input id="roughFreq" type="number" min="0" step="0.05" value="0.25" />
+                </div>
+                <div class="field">
+                  <label for="roughSeed">粗糙种子</label>
+                  <input id="roughSeed" type="number" step="1" value="1" />
+                </div>
+                <div class="field">
+                  <label for="bodyMass">机身重量（kg）</label>
+                  <input id="bodyMass" type="number" min="0" step="0.1" value="1.7" />
+                </div>
+                <div class="field">
+                  <label for="applyScale">使用帧头 scale</label>
+                  <label class="toggle" style="justify-content: flex-end">
+                    <input id="applyScale" type="checkbox" checked />
+                    开
+                  </label>
+                </div>
+                <div class="field">
+                  <label for="invertCalf">小腿方向取反</label>
+                  <label class="toggle" style="justify-content: flex-end">
+                    <input id="invertCalf" type="checkbox" checked />
+                    开
+                  </label>
+                </div>
+                <div class="field">
+                  <label for="showTraj">显示足端轨迹</label>
+                  <label class="toggle" style="justify-content: flex-end">
+                    <input id="showTraj" type="checkbox" checked />
+                    开
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="help" style="margin-top: 12px">
+              <b>操作：</b>鼠标左键旋转 / 右键平移 / 滚轮缩放。
+              <br />
+              <b>提示：</b>如果高度曲线整体偏低，可尝试增大“地面偏置（mm）”或调整观测腿相关角度。
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/urdf-loader@0.12.6/umd/URDFLoader.js"></script>
+    <script>
+      const DEG2RAD = Math.PI / 180;
+
+      const EXAMPLE_TEXT = String.raw`const int8_t wkF_modified[] PROGMEM = {
+ 39, 0, 0, 1, 0, 30,
+ 0,    0,   17,   34,   28,   21,   20,   28,   28,   32,
+ 0,    0,   15,   36,   22,   22,   22,   29,   27,   32,
+ 0,    0,   15,   37,   16,   22,   23,   30,   26,   32,
+ 0,    0,   15,   38,    8,   23,   23,   32,   28,   32,
+ 0,    0,   16,   39,    1,   24,   23,   34,   31,   32,
+ 0,    0,   17,   39,   -6,   24,   23,   37,   36,   33,
+ 0,    0,   18,   40,   -9,   25,   24,   39,   42,   33,
+ 0,    0,   19,   38,   -7,   26,   23,   45,   46,   33,
+ 0,    0,   19,   41,   -5,   27,   23,   45,   43,   33,
+ 0,    0,   20,   47,   -2,   27,   23,   38,   42,   34,
+ 0,    0,   21,   49,    1,   28,   24,   30,   41,   35,
+ 0,    0,   22,   48,    4,   28,   24,   23,   40,   35,
+ 0,    0,   22,   45,    6,   29,   24,   18,   39,   36,
+ 0,    0,   23,   40,    9,   31,   24,   14,   39,   35,
+ 0,    0,   24,   35,   11,   32,   24,   12,   39,   33,
+ 0,    0,   24,   30,   13,   32,   24,   10,   39,   32,
+ 0,    0,   24,   23,   17,   30,   25,   10,   37,   31,
+ 0,    0,   25,   15,   18,   28,   25,   12,   38,   31,
+ 0,    0,   26,    8,   21,   27,   25,   16,   38,   29,
+ 0,    0,   27,   -2,   22,   25,   25,   22,   39,   29,
+ 0,    0,   27,   -5,   24,   23,   26,   25,   40,   28,
+ 0,    0,   28,   -7,   25,   20,   27,   31,   41,   28,
+ 0,    0,   28,   -4,   27,   19,   27,   31,   42,   28,
+ 0,    0,   29,   -2,   28,   16,   28,   29,   44,   28,
+ 0,    0,   29,    1,   30,   14,   28,   27,   44,   28,
+ 0,    0,   30,    5,   31,   13,   29,   25,   46,   30,
+ 0,    0,   30,    8,   32,   12,   29,   24,   48,   31,
+ 0,    0,   30,   11,   33,   12,   32,   23,   50,   33,
+ 0,    0,   32,   12,   33,   12,   28,   22,   54,   33,
+ 0,    0,   32,   15,   33,   14,   28,   21,   57,   31,
+ 0,    0,   33,   18,   33,   14,   25,   21,   61,   31,
+ 0,    0,   31,   20,   32,   15,   24,   22,   65,   31,
+ 0,    0,   30,   22,   35,   16,   23,   22,   67,   31,
+ 0,    0,   28,   25,   40,   17,   22,   22,   57,   31,
+ 0,    0,   27,   27,   41,   18,   21,   22,   53,   32,
+ 0,    0,   24,   28,   41,   19,   21,   23,   44,   31,
+ 0,    0,   23,   31,   39,   19,   20,   23,   38,   31,
+ 0,    0,   20,   32,   36,   20,   20,   24,   32,   31,
+ 0,    0,   19,   33,   33,   21,   20,   27,   28,   32
+};`;
+
+      const els = {
+        dataInput: document.getElementById("dataInput"),
+        autoParse: document.getElementById("autoParse"),
+        btnParse: document.getElementById("btnParse"),
+        btnClear: document.getElementById("btnClear"),
+        btnExample: document.getElementById("btnExample"),
+        parseError: document.getElementById("parseError"),
+        statusDot: document.getElementById("statusDot"),
+        statusText: document.getElementById("statusText"),
+        kvFrames: document.getElementById("kvFrames"),
+        kvInterval: document.getElementById("kvInterval"),
+        kvChannels: document.getElementById("kvChannels"),
+        kvScale: document.getElementById("kvScale"),
+        threeRoot: document.getElementById("threeRoot"),
+        btnPlay: document.getElementById("btnPlay"),
+        btnStop: document.getElementById("btnStop"),
+        loop: document.getElementById("loop"),
+        speed: document.getElementById("speed"),
+        timeline: document.getElementById("timeline"),
+        timelineLabel: document.getElementById("timelineLabel"),
+        frameBadge: document.getElementById("frameBadge"),
+        legHeightBadge: document.getElementById("legHeightBadge"),
+        legPanelTitle: document.getElementById("legPanelTitle"),
+        legSelect: document.getElementById("legSelect"),
+        kvNow: document.getElementById("kvNow"),
+        kvPeak: document.getElementById("kvPeak"),
+        kvLegForce: document.getElementById("kvLegForce"),
+        kvSupportCount: document.getElementById("kvSupportCount"),
+        kvThighTau: document.getElementById("kvThighTau"),
+        kvCalfTau: document.getElementById("kvCalfTau"),
+        btnJumpPeak: document.getElementById("btnJumpPeak"),
+        interp: document.getElementById("interp"),
+        smooth: document.getElementById("smooth"),
+        ground: document.getElementById("ground"),
+        roughAmp: document.getElementById("roughAmp"),
+        roughFreq: document.getElementById("roughFreq"),
+        roughSeed: document.getElementById("roughSeed"),
+        bodyMass: document.getElementById("bodyMass"),
+        applyScale: document.getElementById("applyScale"),
+        invertCalf: document.getElementById("invertCalf"),
+        showTraj: document.getElementById("showTraj"),
+        chartCanvas: document.getElementById("chartCanvas"),
+        chartWrap: document.getElementById("chartWrap"),
+        chartTip: document.getElementById("chartTip"),
+        btnReset: document.getElementById("btnReset"),
+        btnHelp: document.getElementById("btnHelp"),
+      };
+
+      const state = {
+        dataset: {
+          rawText: "",
+          header: { frameCount: 0, scale: 1, intervalMs: 30 },
+          channelCount: 10,
+          frames: [],
+          parseError: "",
+        },
+        sim: {
+          isPlaying: false,
+          loop: true,
+          speed: 1,
+          interpolation: "linear",
+          smoothingStrength: 0.2,
+          groundOffsetMm: 0,
+          roughAmpMm: 0,
+          roughFreq: 0.25,
+          roughSeed: 1,
+          bodyMassKg: 1.7,
+          modelScale: 1,
+          applyHeaderScale: true,
+          invertCalf: true,
+          showTrajectory: true,
+        },
+        playback: {
+          frameIndex: 0,
+          t: 0,
+          lastTs: 0,
+          smoothedPose: null,
+        },
+        observe: {
+          leg: "BR",
+          heights: [],
+          peakIndex: 0,
+          peakValue: 0,
+        },
+      };
+
+      function setStatus(kind, text) {
+        els.statusText.textContent = text;
+        els.statusDot.className = "dot";
+        if (kind === "ok") els.statusDot.classList.add("ok");
+        if (kind === "bad") els.statusDot.classList.add("bad");
+      }
+
+      function setParseError(msg) {
+        if (!msg) {
+          els.parseError.style.display = "none";
+          els.parseError.innerHTML = "";
+          return;
+        }
+        els.parseError.style.display = "block";
+        // 中文注释：解析错误可能包含多行提示，用 <br> 保留换行方便排查。
+        const html = escapeHtml(msg).replaceAll("\n", "<br>");
+        els.parseError.innerHTML = `<div class="alert">${html}</div>`;
+      }
+
+      function escapeHtml(s) {
+        return String(s)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function clamp(n, min, max) {
+        return Math.max(min, Math.min(max, n));
+      }
+
+      function debounce(fn, waitMs) {
+        let t = 0;
+        return function () {
+          const args = arguments;
+          window.clearTimeout(t);
+          t = window.setTimeout(() => fn.apply(null, args), waitMs);
+        };
+      }
+
+      function parseGaitText(rawText) {
+        // 中文注释：提取整数时，必须排除标识符里的数字（例如 int8_t 的“8”），否则帧头会错位。
+        const s = String(rawText);
+
+        const matches = s.matchAll(/-?\d+/g);
+        const nums = [];
+        for (const m of matches) {
+          const text = m[0];
+          const idx = m.index ?? 0;
+          const pre = idx > 0 ? s[idx - 1] : "";
+          const post = idx + text.length < s.length ? s[idx + text.length] : "";
+
+          const preBad = /[A-Za-z_]/.test(pre);
+          const postBad = /[A-Za-z_]/.test(post);
+          if (preBad || postBad) continue;
+
+          const n = Number.parseInt(text, 10);
+          if (Number.isFinite(n)) nums.push(n);
+        }
+
+        if (nums.length < 6) return { ok: false, error: "解析失败：未找到足够的数值（至少需要 6 个帧头字段）" };
+
+        // 中文注释：允许输入文本在帧头前夹杂少量数字（例如宏、版本号等），用启发式自动定位帧头。
+        let headerStart = 0;
+        let bestScore = Number.POSITIVE_INFINITY;
+        const scanLimit = Math.min(nums.length - 6, 200);
+        for (let i = 0; i <= scanLimit; i++) {
+          const fc = nums[i] | 0;
+          const itv = nums[i + 5] | 0;
+          if (fc <= 0 || fc > 2000) continue;
+          if (itv <= 0 || itv > 10000) continue;
+          const bodyLen = nums.length - (i + 6);
+          const cc = bodyLen / fc;
+          if (!Number.isInteger(cc)) continue;
+          const score = Math.abs(cc - 10) + i * 0.01;
+          if (score < bestScore) {
+            bestScore = score;
+            headerStart = i;
+          }
+        }
+
+        const foundHeader = Number.isFinite(bestScore) && bestScore !== Number.POSITIVE_INFINITY;
+
+        const frameCount = nums[headerStart] | 0;
+        const scale = Number.isFinite(nums[headerStart + 3]) ? nums[headerStart + 3] : 1;
+        const intervalMs = Number.isFinite(nums[headerStart + 5]) ? nums[headerStart + 5] : 30;
+
+        if (frameCount <= 0 || frameCount > 2000) {
+          const head = nums.slice(0, 12).join(", ");
+          const hint = foundHeader ? "" : "（提示：可能把标识符里的数字当成了数据，例如 int8_t 的 8。建议只粘贴大括号内数组，或检查输入里是否夹杂数字。）";
+          return { ok: false, error: `解析失败：帧数不合法：${frameCount}${hint}\n前 12 个提取到的数值：${head}` };
+        }
+        if (intervalMs <= 0 || intervalMs > 10000) {
+          const head = nums.slice(0, 12).join(", ");
+          const hint = foundHeader ? "" : "（提示：可能把标识符里的数字当成了数据，例如 int8_t 的 8。建议只粘贴大括号内数组，或检查输入里是否夹杂数字。）";
+          return { ok: false, error: `解析失败：intervalMs 不合法：${intervalMs}${hint}\n前 12 个提取到的数值：${head}` };
+        }
+
+        const body = nums.slice(headerStart + 6);
+        if (body.length === 0) {
+          return { ok: false, error: "解析失败：帧头后没有帧数据" };
+        }
+
+        const channelCount = body.length / frameCount;
+        if (!Number.isInteger(channelCount)) {
+          return {
+            ok: false,
+            error: `解析失败：数据长度不匹配。帧头后共有 ${body.length} 个数值，无法平均分成 ${frameCount} 帧。`,
+          };
+        }
+        if (channelCount < 6) {
+          return { ok: false, error: `解析失败：通道数太少：${channelCount}（期望 10）` };
+        }
+
+        const frames = [];
+        for (let i = 0; i < frameCount; i++) {
+          const start = i * channelCount;
+          frames.push(body.slice(start, start + channelCount));
+        }
+
+        return {
+          ok: true,
+          header: { frameCount, scale, intervalMs, headerStart },
+          channelCount,
+          frames,
+        };
+      }
+
+      function getAngleScale() {
+        if (!state.sim.applyHeaderScale) return 1;
+        const s = Number(state.dataset.header.scale);
+        return Number.isFinite(s) && s !== 0 ? s : 1;
+      }
+
+      function getFrameDurationMs() {
+        const base = Number(state.dataset.header.intervalMs) || 30;
+        const sp = Number(state.sim.speed) || 1;
+        return base / sp;
+      }
+
+      function getSmootingAlpha() {
+        const strength = clamp(Number(state.sim.smoothingStrength) || 0, 0, 0.9);
+        // 中文注释：强度越大越“稳”，所以 alpha 越小（越依赖上一帧的值）
+        const alpha = clamp(1 - strength, 0.05, 1);
+        return alpha;
+      }
+
+      function lerp(a, b, t) {
+        return a + (b - a) * t;
+      }
+
+      function getPoseAt(timeMs) {
+        const frames = state.dataset.frames;
+        if (!frames.length) return null;
+        const n = frames.length;
+        const frameMs = getFrameDurationMs();
+
+        const totalMs = n * frameMs;
+        let t = timeMs;
+        if (state.sim.loop) {
+          t = ((t % totalMs) + totalMs) % totalMs;
+        } else {
+          t = clamp(t, 0, Math.max(0, totalMs - 0.0001));
+        }
+
+        const f = t / frameMs;
+        const i0 = Math.floor(f);
+        const frac = f - i0;
+        const i1 = (i0 + 1) % n;
+
+        const a = frames[i0];
+        if (state.sim.interpolation !== "linear") {
+          return { pose: a, frameIndex: i0, frameFloat: f };
+        }
+
+        const b = frames[i1];
+        const cc = Math.min(a.length, b.length);
+        const out = new Array(cc);
+        for (let i = 0; i < cc; i++) out[i] = lerp(a[i], b[i], frac);
+        return { pose: out, frameIndex: i0, frameFloat: f };
+      }
+
+      function smoothPose(pose) {
+        // 中文注释：播放过程中做指数平滑，避免高频抖动，便于观察足端高度
+        const alpha = getSmootingAlpha();
+        if (!state.playback.smoothedPose || state.playback.smoothedPose.length !== pose.length) {
+          state.playback.smoothedPose = pose.slice();
+          return pose;
+        }
+        const prev = state.playback.smoothedPose;
+        for (let i = 0; i < pose.length; i++) {
+          prev[i] = alpha * pose[i] + (1 - alpha) * prev[i];
+        }
+        return prev;
+      }
+
+      const URDF_PATH = "./xrrobot_urdf/urdf/xrrobot_urdf.urdf";
+
+      const JOINT_MAP = {
+        headYaw: "Head_Yaw_joint",
+        headPitch: "Head_Pitch_joint",
+        thighFL: "Shoulder_FL_joint",
+        thighFR: "Shoulder_FR_joint",
+        thighRR: "Shoulder_BR_joint",
+        thighRL: "Shoulder_BL_joint",
+        calfFL: "Knee_FL_joint",
+        calfFR: "Knee_FR_joint",
+        calfRR: "Knee_BR_joint",
+        calfRL: "Knee_BL_joint",
+      };
+
+      const JOINT_SIGN = {
+        // 中文注释：URDF 里左侧（FL/BL）关节轴方向与数组定义的正方向相反，所以这里做一次符号修正
+        headYaw: 1,
+        headPitch: 1,
+        thighFL: -1,
+        calfFL: -1,
+        thighFR: 1,
+        calfFR: 1,
+        thighRR: 1,
+        calfRR: 1,
+        thighRL: -1,
+        calfRL: -1,
+      };
+
+      const LEG_DEF = {
+        FL: { label: "左前（FL）", thighJoint: JOINT_MAP.thighFL, calfJoint: JOINT_MAP.calfFL, footLink: "Knee_FL_link", links: ["Shoulder_FL_link", "Knee_FL_link"] },
+        FR: { label: "右前（FR）", thighJoint: JOINT_MAP.thighFR, calfJoint: JOINT_MAP.calfFR, footLink: "Knee_FR_link", links: ["Shoulder_FR_link", "Knee_FR_link"] },
+        BR: { label: "右后（BR）", thighJoint: JOINT_MAP.thighRR, calfJoint: JOINT_MAP.calfRR, footLink: "Knee_BR_link", links: ["Shoulder_BR_link", "Knee_BR_link"] },
+        BL: { label: "左后（BL）", thighJoint: JOINT_MAP.thighRL, calfJoint: JOINT_MAP.calfRL, footLink: "Knee_BL_link", links: ["Shoulder_BL_link", "Knee_BL_link"] },
+      };
+      const LEG_KEYS = ["FL", "FR", "BR", "BL"];
+
+      let urdfRobot = null;
+      let baseLink = null;
+      let legLinks = { FL: null, FR: null, BR: null, BL: null };
+      let highlightedLeg = "";
+      const _tmpBox = new THREE.Box3();
+      const _tmpV3 = new THREE.Vector3();
+      const _tmpV3b = new THREE.Vector3();
+      const _tmpV3c = new THREE.Vector3();
+      const _tmpV3d = new THREE.Vector3();
+
+      function isBoxValid(box) {
+        return (
+          Number.isFinite(box.min.x) &&
+          Number.isFinite(box.min.y) &&
+          Number.isFinite(box.min.z) &&
+          Number.isFinite(box.max.x) &&
+          Number.isFinite(box.max.y) &&
+          Number.isFinite(box.max.z) &&
+          box.min.x <= box.max.x &&
+          box.min.y <= box.max.y &&
+          box.min.z <= box.max.z
+        );
+      }
+
+      function loadUrdRobot() {
+        if (typeof URDFLoader !== "function") {
+          setStatus("bad", "URDFLoader 未加载，请检查网络或脚本引用。");
+          return;
+        }
+
+        setStatus("ok", "URDF 加载中…");
+
+        const manager = new THREE.LoadingManager();
+        // 中文注释：URDFLoader 会异步加载 STL，因此必须等 manager.onLoad 触发后再计算包围盒/曲线/轨迹，否则会出现 NaN。
+        manager.onLoad = () => {
+          if (!urdfRobot) return;
+
+          // 中文注释：URDF 通常是 ROS 坐标系（Z-up），Three.js 默认 Y-up，这里做一次对齐，让“高度”更直观。
+          urdfRobot.rotation.set(-Math.PI / 2, 0, 0);
+          urdfRobot.updateMatrixWorld(true);
+
+          // 中文注释：自动缩放 + 自动对齐到地面，保证模型一定能看到。
+          const box = new THREE.Box3().setFromObject(urdfRobot);
+          if (!isBoxValid(box)) {
+            setStatus("bad", "URDF 已加载，但无法计算模型包围盒（可能 mesh 为空或加载失败）。");
+            return;
+          }
+          const size = new THREE.Vector3();
+          box.getSize(size);
+          const diag = Math.max(1e-6, size.length());
+          const desiredDiag = 220;
+          const s = desiredDiag / diag;
+          urdfRobot.scale.multiplyScalar(s);
+          urdfRobot.updateMatrixWorld(true);
+
+          const box2 = new THREE.Box3().setFromObject(urdfRobot);
+          const center = new THREE.Vector3();
+          box2.getCenter(center);
+          urdfRobot.position.x -= center.x;
+          urdfRobot.position.z -= center.z;
+          urdfRobot.position.y -= box2.min.y;
+          urdfRobot.updateMatrixWorld(true);
+
+          const box3 = new THREE.Box3().setFromObject(urdfRobot);
+          const size3 = new THREE.Vector3();
+          box3.getSize(size3);
+          controls.target.set(0, Math.max(20, size3.y * 0.45), 0);
+          camera.position.set(size3.x * 1.2, size3.y * 1.1, size3.z * 1.2);
+          controls.update();
+
+          state.sim.modelScale = Number(urdfRobot.scale.x) || 1;
+          setSelectedLeg(state.observe.leg, false);
+          applyPoseToModel(state.dataset.frames[state.playback.frameIndex] || []);
+          recomputeLegSeries();
+          updateTrajectory();
+          drawChart();
+          updateInfoUI();
+          setStatus("ok", "URDF 加载完成");
+        };
+
+        const loader = new URDFLoader(manager);
+        loader.packages = { xrrobot_urdf: "./xrrobot_urdf" };
+        loader.load(
+          URDF_PATH,
+          (robot) => {
+            urdfRobot = robot;
+            urdfRobot.traverse((o) => {
+              if (o && o.isMesh) {
+                o.castShadow = false;
+                o.receiveShadow = false;
+              }
+            });
+
+            if (robotGroup) robotGroup.add(urdfRobot);
+
+            baseLink = (urdfRobot.links && urdfRobot.links.base_link) || urdfRobot.getObjectByName("base_link");
+            for (const k of LEG_KEYS) {
+              const linkName = LEG_DEF[k].footLink;
+              legLinks[k] = (urdfRobot.links && urdfRobot.links[linkName]) || urdfRobot.getObjectByName(linkName) || null;
+            }
+
+            if (urdfRobot.joints) {
+              for (const k of Object.keys(urdfRobot.joints)) urdfRobot.joints[k].ignoreLimits = true;
+            }
+            // 中文注释：后续流程（包围盒/缩放/曲线）由 manager.onLoad 统一触发，避免 mesh 未加载导致 NaN。
+          },
+          undefined,
+          (err) => {
+            setStatus("bad", `URDF 加载失败：${err && err.message ? err.message : String(err)}`);
+          }
+        );
+      }
+
+      function highlightLeg(legKey) {
+        if (!urdfRobot) return;
+        const k = LEG_DEF[legKey] ? legKey : "BR";
+        const prev = highlightedLeg;
+        highlightedLeg = k;
+
+        const resetLinks = (links) => {
+          if (!links) return;
+          for (const linkName of links) {
+            const link = (urdfRobot.links && urdfRobot.links[linkName]) || urdfRobot.getObjectByName(linkName);
+            if (!link) continue;
+            link.traverse((o) => {
+              if (!o || !o.isMesh) return;
+              if (o.userData && o.userData._origMat) o.material = o.userData._origMat;
+            });
+          }
+        };
+
+        const tintLinks = (links, hex) => {
+          if (!links) return;
+          for (const linkName of links) {
+            const link = (urdfRobot.links && urdfRobot.links[linkName]) || urdfRobot.getObjectByName(linkName);
+            if (!link) continue;
+            link.traverse((o) => {
+              if (!o || !o.isMesh || !o.material) return;
+              if (!o.userData) o.userData = {};
+              if (!o.userData._origMat) o.userData._origMat = o.material;
+              const m = o.material.clone ? o.material.clone() : o.material;
+              if (m && m.color) m.color.setHex(hex);
+              o.material = m;
+            });
+          }
+        };
+
+        if (prev && prev !== k) resetLinks(LEG_DEF[prev] && LEG_DEF[prev].links);
+        tintLinks(LEG_DEF[k].links, 0xf59e0b);
+      }
+
+      function setSelectedLeg(legKey, syncUI = true) {
+        const k = LEG_DEF[legKey] ? legKey : "BR";
+        state.observe.leg = k;
+        if (syncUI && els.legSelect) els.legSelect.value = k;
+        if (els.legPanelTitle) els.legPanelTitle.textContent = `观测腿：${LEG_DEF[k].label}`;
+        highlightLeg(k);
+      }
+
+      function setRobotJoint(name, rad) {
+        if (!urdfRobot) return;
+        if (typeof urdfRobot.setJointValue === "function") {
+          urdfRobot.setJointValue(name, rad);
+          return;
+        }
+        if (urdfRobot.joints && urdfRobot.joints[name] && typeof urdfRobot.joints[name].setJointValue === "function") {
+          urdfRobot.joints[name].setJointValue(rad);
+        }
+      }
+
+      function setRobotPoseFromFrame(frame) {
+        if (!urdfRobot) return;
+        const scale = getAngleScale();
+        const inv = state.sim.invertCalf ? -1 : 1;
+
+        setRobotJoint(JOINT_MAP.headYaw, (JOINT_SIGN.headYaw * (frame[0] || 0) * scale * DEG2RAD));
+        setRobotJoint(JOINT_MAP.headPitch, (JOINT_SIGN.headPitch * (frame[1] || 0) * scale * DEG2RAD));
+
+        setRobotJoint(JOINT_MAP.thighFL, (JOINT_SIGN.thighFL * (frame[2] || 0) * scale * DEG2RAD));
+        setRobotJoint(JOINT_MAP.thighFR, (JOINT_SIGN.thighFR * (frame[3] || 0) * scale * DEG2RAD));
+        setRobotJoint(JOINT_MAP.thighRR, (JOINT_SIGN.thighRR * (frame[4] || 0) * scale * DEG2RAD));
+        setRobotJoint(JOINT_MAP.thighRL, (JOINT_SIGN.thighRL * (frame[5] || 0) * scale * DEG2RAD));
+
+        setRobotJoint(JOINT_MAP.calfFL, (JOINT_SIGN.calfFL * inv * (frame[6] || 0) * scale * DEG2RAD));
+        setRobotJoint(JOINT_MAP.calfFR, (JOINT_SIGN.calfFR * inv * (frame[7] || 0) * scale * DEG2RAD));
+        setRobotJoint(JOINT_MAP.calfRR, (JOINT_SIGN.calfRR * inv * (frame[8] || 0) * scale * DEG2RAD));
+        setRobotJoint(JOINT_MAP.calfRL, (JOINT_SIGN.calfRL * inv * (frame[9] || 0) * scale * DEG2RAD));
+      }
+
+      function _fract(x) {
+        return x - Math.floor(x);
+      }
+
+      function noise2(x, z, seed) {
+        const t = Math.sin(x * 12.9898 + z * 78.233 + seed * 37.719) * 43758.5453;
+        return _fract(t) * 2 - 1;
+      }
+
+      function groundYmmAtWorldXZ(xWorld, zWorld) {
+        const scale = Number(state.sim.modelScale) || 1;
+        const xMm = (xWorld / scale) * 1000;
+        const zMm = (zWorld / scale) * 1000;
+        const base = Number(state.sim.groundOffsetMm) || 0;
+        const amp = Math.max(0, Number(state.sim.roughAmpMm) || 0);
+        if (amp <= 0) return base;
+        const freq = Math.max(0, Number(state.sim.roughFreq) || 0);
+        const seed = Number(state.sim.roughSeed) || 0;
+        const n = 0.6 * noise2(xMm * freq, zMm * freq, seed) + 0.4 * noise2(xMm * freq * 2.3, zMm * freq * 2.3, seed + 11.7);
+        return base + amp * n;
+      }
+
+      function groundYWorldAtWorldXZ(xWorld, zWorld) {
+        const scale = Number(state.sim.modelScale) || 1;
+        const yMm = groundYmmAtWorldXZ(xWorld, zWorld);
+        return (yMm / 1000) * scale;
+      }
+
+      function getLegContactPointWorld(legKey, out) {
+        const k = LEG_DEF[legKey] ? legKey : "BR";
+        const link = legLinks[k];
+        if (!link) {
+          out.set(0, 0, 0);
+          return false;
+        }
+        _tmpBox.setFromObject(link);
+        if (!isBoxValid(_tmpBox)) {
+          out.set(0, 0, 0);
+          return false;
+        }
+        out.set((_tmpBox.min.x + _tmpBox.max.x) / 2, _tmpBox.min.y, (_tmpBox.min.z + _tmpBox.max.z) / 2);
+        const gy = groundYWorldAtWorldXZ(out.x, out.z);
+        if (out.y < gy) out.y = gy;
+        return true;
+      }
+
+      function getLegHeightMmNow(legKey) {
+        const k = LEG_DEF[legKey] ? legKey : "BR";
+        const link = legLinks[k];
+        if (!link) return 0;
+        _tmpBox.setFromObject(link);
+        if (!isBoxValid(_tmpBox)) return 0;
+        const x = (_tmpBox.min.x + _tmpBox.max.x) / 2;
+        const z = (_tmpBox.min.z + _tmpBox.max.z) / 2;
+        const yMm = (_tmpBox.min.y / (Number(state.sim.modelScale) || 1)) * 1000;
+        const gMm = groundYmmAtWorldXZ(x, z);
+        return yMm - gMm;
+      }
+
+      function recomputeLegSeries() {
+        const frames = state.dataset.frames;
+        const legKey = state.observe.leg;
+        if (!frames.length || !urdfRobot || !legLinks[legKey]) {
+          state.observe.heights = [];
+          state.observe.peakIndex = 0;
+          state.observe.peakValue = 0;
+          els.btnJumpPeak.disabled = true;
+          return;
+        }
+
+        const series = new Array(frames.length);
+        const keep = state.playback.frameIndex;
+        for (let i = 0; i < frames.length; i++) {
+          setRobotPoseFromFrame(frames[i]);
+          urdfRobot.updateMatrixWorld(true);
+          series[i] = getLegHeightMmNow(legKey);
+        }
+        state.observe.heights = series;
+
+        let peakV = -Infinity;
+        let peakI = 0;
+        for (let i = 0; i < series.length; i++) {
+          if (series[i] > peakV) {
+            peakV = series[i];
+            peakI = i;
+          }
+        }
+        state.observe.peakIndex = peakI;
+        state.observe.peakValue = Number.isFinite(peakV) ? peakV : 0;
+        els.btnJumpPeak.disabled = series.length === 0;
+
+        state.playback.frameIndex = clamp(keep, 0, Math.max(0, frames.length - 1));
+        setRobotPoseFromFrame(frames[state.playback.frameIndex]);
+      }
+
+      function fmtMm(n) {
+        if (!Number.isFinite(n)) return "-";
+        return n.toFixed(1);
+      }
+
+      function updateInfoUI() {
+        els.kvFrames.textContent = state.dataset.header.frameCount ? String(state.dataset.header.frameCount) : "-";
+        els.kvInterval.textContent = state.dataset.header.intervalMs ? String(state.dataset.header.intervalMs) : "-";
+        els.kvChannels.textContent = state.dataset.channelCount ? String(state.dataset.channelCount) : "-";
+        els.kvScale.textContent = state.dataset.header.scale != null ? String(state.dataset.header.scale) : "-";
+
+        const n = state.dataset.frames.length;
+        els.timeline.max = n ? String(n - 1) : "0";
+        els.timeline.value = String(clamp(state.playback.frameIndex, 0, Math.max(0, n - 1)));
+        els.timelineLabel.textContent = `${state.playback.frameIndex} / ${Math.max(0, n - 1)}`;
+        els.frameBadge.textContent = `Frame ${state.playback.frameIndex} / ${Math.max(0, n - 1)}`;
+
+        const heights = state.observe.heights;
+        const now = heights[state.playback.frameIndex];
+        els.kvNow.textContent = fmtMm(now);
+        els.legHeightBadge.textContent = fmtMm(now) + " mm";
+        els.kvPeak.textContent = fmtMm(state.observe.peakValue);
+      }
+
+      function setDatasetFromText(rawText) {
+        state.dataset.rawText = rawText;
+        const res = parseGaitText(rawText);
+        if (!res.ok) {
+          state.dataset.parseError = res.error;
+          setParseError(res.error);
+          setStatus("bad", res.error);
+          return false;
+        }
+
+        state.dataset.header = res.header;
+        state.dataset.channelCount = res.channelCount;
+        state.dataset.frames = res.frames;
+        state.dataset.parseError = "";
+        setParseError("");
+        const ignored = Number(res.header.headerStart) > 0 ? `（已忽略前导 ${res.header.headerStart} 个数值）` : "";
+        setStatus("ok", `解析成功：${res.header.frameCount} 帧，${res.channelCount} 通道，interval ${res.header.intervalMs}ms ${ignored}`);
+
+        state.playback.frameIndex = clamp(state.playback.frameIndex, 0, Math.max(0, res.frames.length - 1));
+        state.playback.t = state.playback.frameIndex * getFrameDurationMs();
+        state.playback.smoothedPose = null;
+
+        window.localStorage.setItem("gait_sim_raw", rawText);
+        recomputeLegSeries();
+        updateTrajectory();
+        drawChart();
+        updateInfoUI();
+        return true;
+      }
+
+      const scheduleAutoParse = debounce(() => {
+        if (!els.autoParse.checked) return;
+        setDatasetFromText(els.dataInput.value);
+      }, 400);
+
+      function setupUI() {
+        const saved = window.localStorage.getItem("gait_sim_raw");
+        els.dataInput.value = saved || EXAMPLE_TEXT;
+        state.sim.loop = true;
+
+        els.btnExample.addEventListener("click", () => {
+          els.dataInput.value = EXAMPLE_TEXT;
+          setDatasetFromText(els.dataInput.value);
+        });
+        els.btnClear.addEventListener("click", () => {
+          els.dataInput.value = "";
+          setDatasetFromText(els.dataInput.value);
+        });
+        els.btnParse.addEventListener("click", () => {
+          setDatasetFromText(els.dataInput.value);
+        });
+        els.dataInput.addEventListener("input", () => {
+          scheduleAutoParse();
+        });
+
+        els.btnPlay.addEventListener("click", () => {
+          if (!state.dataset.frames.length) return;
+          state.sim.isPlaying = !state.sim.isPlaying;
+          els.btnPlay.textContent = state.sim.isPlaying ? "暂停" : "播放";
+          if (state.sim.isPlaying) state.playback.lastTs = 0;
+        });
+        els.btnStop.addEventListener("click", () => {
+          state.sim.isPlaying = false;
+          els.btnPlay.textContent = "播放";
+          state.playback.t = 0;
+          state.playback.frameIndex = 0;
+          state.playback.smoothedPose = null;
+          updatePoseFromTimeline();
+        });
+        els.loop.addEventListener("change", () => {
+          state.sim.loop = !!els.loop.checked;
+        });
+        els.speed.addEventListener("change", () => {
+          state.sim.speed = Number(els.speed.value) || 1;
+        });
+        els.timeline.addEventListener("input", () => {
+          state.sim.isPlaying = false;
+          els.btnPlay.textContent = "播放";
+          state.playback.frameIndex = Number(els.timeline.value) || 0;
+          state.playback.t = state.playback.frameIndex * getFrameDurationMs();
+          state.playback.smoothedPose = null;
+          updatePoseFromTimeline();
+        });
+
+        els.btnJumpPeak.addEventListener("click", () => {
+          if (!state.dataset.frames.length) return;
+          state.sim.isPlaying = false;
+          els.btnPlay.textContent = "播放";
+          state.playback.frameIndex = state.observe.peakIndex;
+          state.playback.t = state.playback.frameIndex * getFrameDurationMs();
+          state.playback.smoothedPose = null;
+          els.timeline.value = String(state.playback.frameIndex);
+          updatePoseFromTimeline();
+        });
+
+        els.interp.addEventListener("change", () => {
+          state.sim.interpolation = String(els.interp.value);
+        });
+        els.smooth.addEventListener("change", () => {
+          state.sim.smoothingStrength = clamp(Number(els.smooth.value) || 0, 0, 0.9);
+        });
+        els.ground.addEventListener("change", () => {
+          state.sim.groundOffsetMm = Number(els.ground.value) || 0;
+          recomputeLegSeries();
+          updateTrajectory();
+          updatePoseFromTimeline();
+        });
+        els.roughAmp.addEventListener("change", () => {
+          state.sim.roughAmpMm = Number(els.roughAmp.value) || 0;
+          recomputeLegSeries();
+          updateTrajectory();
+          updatePoseFromTimeline();
+        });
+        els.roughFreq.addEventListener("change", () => {
+          state.sim.roughFreq = Number(els.roughFreq.value) || 0;
+          recomputeLegSeries();
+          updateTrajectory();
+          updatePoseFromTimeline();
+        });
+        els.roughSeed.addEventListener("change", () => {
+          state.sim.roughSeed = Number(els.roughSeed.value) || 0;
+          recomputeLegSeries();
+          updateTrajectory();
+          updatePoseFromTimeline();
+        });
+        els.bodyMass.addEventListener("change", () => {
+          state.sim.bodyMassKg = Math.max(0, Number(els.bodyMass.value) || 0);
+          updateLoadUI();
+        });
+        els.applyScale.addEventListener("change", () => {
+          state.sim.applyHeaderScale = !!els.applyScale.checked;
+          recomputeLegSeries();
+          updateTrajectory();
+          drawChart();
+          updatePoseFromTimeline();
+        });
+        els.invertCalf.addEventListener("change", () => {
+          state.sim.invertCalf = !!els.invertCalf.checked;
+          recomputeLegSeries();
+          updateTrajectory();
+          drawChart();
+          updatePoseFromTimeline();
+        });
+        els.showTraj.addEventListener("change", () => {
+          state.sim.showTrajectory = !!els.showTraj.checked;
+          updateTrajectoryVisibility();
+        });
+        els.legSelect.addEventListener("change", () => {
+          setSelectedLeg(String(els.legSelect.value || "BR"));
+          recomputeLegSeries();
+          updateTrajectory();
+          drawChart();
+          updatePoseFromTimeline();
+        });
+
+        els.btnReset.addEventListener("click", () => {
+          els.interp.value = "linear";
+          els.smooth.value = "0.2";
+          els.ground.value = "0";
+          els.roughAmp.value = "0";
+          els.roughFreq.value = "0.25";
+          els.roughSeed.value = "1";
+          els.bodyMass.value = "1.7";
+          els.applyScale.checked = true;
+          els.invertCalf.checked = true;
+          els.showTraj.checked = true;
+          els.speed.value = "1";
+          els.loop.checked = true;
+
+          state.sim.interpolation = "linear";
+          state.sim.smoothingStrength = 0.2;
+          state.sim.groundOffsetMm = 0;
+          state.sim.roughAmpMm = 0;
+          state.sim.roughFreq = 0.25;
+          state.sim.roughSeed = 1;
+          state.sim.bodyMassKg = 1.7;
+          state.sim.applyHeaderScale = true;
+          state.sim.invertCalf = true;
+          state.sim.showTrajectory = true;
+          state.sim.speed = 1;
+          state.sim.loop = true;
+
+          recomputeLegSeries();
+          updateTrajectory();
+          drawChart();
+          updatePoseFromTimeline();
+        });
+
+        els.btnHelp.addEventListener("click", () => {
+          window.alert(
+            [
+              "支持直接粘贴 C 数组 / CSV。",
+              "帧头：frameCount, 0, 0, scale, 0, intervalMs。",
+              "每帧通道：头部H、头部V、FL/FR/RR/RL大腿、FL/FR/RR/RL小腿。",
+              "点击腿可切换观测对象（高度曲线、轨迹、负载估算会同步切换）。",
+            ].join("\n")
+          );
+        });
+      }
+
+      function updatePoseFromTimeline() {
+        const frames = state.dataset.frames;
+        if (!frames.length) {
+          updateInfoUI();
+          return;
+        }
+        const f = frames[clamp(state.playback.frameIndex, 0, frames.length - 1)];
+        applyPoseToModel(f);
+        updateInfoUI();
+        drawChart();
+      }
+
+      const SERVO_TORQUE_MAX_NM = 35 * 0.0980665;
+      const BELT_TORQUE_MAX_NM = SERVO_TORQUE_MAX_NM * 0.5;
+
+      function computeSupportForces() {
+        const scale = Number(state.sim.modelScale) || 1;
+        const massKg = Math.max(0, Number(state.sim.bodyMassKg) || 0);
+        const W = massKg * 9.80665;
+
+        const com = new THREE.Vector3();
+        if (baseLink) {
+          const b = new THREE.Box3().setFromObject(baseLink);
+          b.getCenter(com);
+        } else {
+          com.set(0, 0, 0);
+        }
+
+        const epsWorld = (2 / 1000) * scale;
+        const infos = [];
+        for (const k of LEG_KEYS) {
+          const link = legLinks[k];
+          if (!link) continue;
+          const box = new THREE.Box3().setFromObject(link);
+          if (!isBoxValid(box)) continue;
+          const x = (box.min.x + box.max.x) / 2;
+          const z = (box.min.z + box.max.z) / 2;
+          const gy = groundYWorldAtWorldXZ(x, z);
+          const minY = box.min.y;
+          const inContact = minY <= gy + epsWorld;
+          const p = new THREE.Vector3(x, Math.max(minY, gy), z);
+          infos.push({ k, p, inContact });
+        }
+
+        const supports = infos.filter((i) => i.inContact);
+        const used = supports.length ? supports : infos;
+        const n = used.length;
+        const out = { forces: { FL: 0, FR: 0, BR: 0, BL: 0 }, supportCount: n, points: {} };
+        for (const i of used) out.points[i.k] = i.p.clone();
+
+        if (n === 0 || W === 0) return out;
+        if (n === 1) {
+          out.forces[used[0].k] = W;
+          return out;
+        }
+
+        const xs = used.map((i) => i.p.x / scale);
+        const zs = used.map((i) => i.p.z / scale);
+        const x0 = com.x / scale;
+        const z0 = com.z / scale;
+
+        const A = [
+          new Array(n).fill(1),
+          xs.map((x) => x - x0),
+          zs.map((z) => z - z0),
+        ];
+        const b = [W, 0, 0];
+
+        const AtA = Array.from({ length: n }, () => new Array(n).fill(0));
+        const Atb = new Array(n).fill(0);
+        for (let i = 0; i < n; i++) {
+          for (let j = 0; j < n; j++) {
+            AtA[i][j] = A[0][i] * A[0][j] + A[1][i] * A[1][j] + A[2][i] * A[2][j];
+          }
+          Atb[i] = A[0][i] * b[0] + A[1][i] * b[1] + A[2][i] * b[2];
+        }
+
+        const lambda = 1e-6;
+        for (let i = 0; i < n; i++) AtA[i][i] += lambda;
+
+        const M = AtA.map((row, i) => row.concat([Atb[i]]));
+        for (let col = 0; col < n; col++) {
+          let pivot = col;
+          for (let r = col + 1; r < n; r++) if (Math.abs(M[r][col]) > Math.abs(M[pivot][col])) pivot = r;
+          const tmp = M[col];
+          M[col] = M[pivot];
+          M[pivot] = tmp;
+          const p = M[col][col] || 1e-12;
+          for (let c = col; c <= n; c++) M[col][c] /= p;
+          for (let r = 0; r < n; r++) {
+            if (r === col) continue;
+            const f = M[r][col];
+            for (let c = col; c <= n; c++) M[r][c] -= f * M[col][c];
+          }
+        }
+        const f = new Array(n).fill(0).map((_, i) => M[i][n]);
+
+        let sum = 0;
+        for (let i = 0; i < n; i++) {
+          const v = Math.max(0, f[i]);
+          f[i] = v;
+          sum += v;
+        }
+        if (sum <= 1e-9) {
+          for (let i = 0; i < n; i++) f[i] = W / n;
+        } else {
+          const s = W / sum;
+          for (let i = 0; i < n; i++) f[i] *= s;
+        }
+
+        for (let i = 0; i < n; i++) out.forces[used[i].k] = f[i];
+        return out;
+      }
+
+      function jointTorqueMagNm(jointName, contactWorld, forceN) {
+        if (!urdfRobot || !urdfRobot.joints || !urdfRobot.joints[jointName]) return 0;
+        const scale = Number(state.sim.modelScale) || 1;
+        const joint = urdfRobot.joints[jointName];
+        const jp = new THREE.Vector3();
+        joint.getWorldPosition(jp);
+        const rWorld = _tmpV3b.copy(contactWorld).sub(jp);
+        const r = rWorld.multiplyScalar(1 / scale);
+        const F = _tmpV3c.set(0, forceN, 0);
+        const tau = _tmpV3d.copy(r).cross(F);
+        const mag = tau.length();
+        return Number.isFinite(mag) ? mag : 0;
+      }
+
+      function updateLoadUI() {
+        if (!els.kvLegForce) return;
+        if (!urdfRobot) {
+          els.kvLegForce.textContent = "-";
+          els.kvSupportCount.textContent = "-";
+          els.kvThighTau.textContent = "-";
+          els.kvCalfTau.textContent = "-";
+          return;
+        }
+
+        const legKey = state.observe.leg;
+        const res = computeSupportForces();
+        const F = Number(res.forces[legKey] || 0);
+        els.kvLegForce.textContent = F ? F.toFixed(2) : "0.00";
+        els.kvSupportCount.textContent = String(res.supportCount || 0);
+
+        const p = res.points[legKey];
+        if (!p) {
+          els.kvThighTau.textContent = "-";
+          els.kvCalfTau.textContent = "-";
+          return;
+        }
+
+        const thigh = jointTorqueMagNm(LEG_DEF[legKey].thighJoint, p, F);
+        const calf = jointTorqueMagNm(LEG_DEF[legKey].calfJoint, p, F);
+
+        const thighPct = SERVO_TORQUE_MAX_NM > 0 ? (thigh / SERVO_TORQUE_MAX_NM) * 100 : 0;
+        const calfPctServo = SERVO_TORQUE_MAX_NM > 0 ? (calf / SERVO_TORQUE_MAX_NM) * 100 : 0;
+        const calfPctBelt = BELT_TORQUE_MAX_NM > 0 ? (calf / BELT_TORQUE_MAX_NM) * 100 : 0;
+
+        els.kvThighTau.textContent = `${thigh.toFixed(3)}  (${thighPct.toFixed(0)}%)`;
+        els.kvCalfTau.textContent = `${calf.toFixed(3)}  (舵机${calfPctServo.toFixed(0)}% / 皮带${calfPctBelt.toFixed(0)}%)`;
+      }
+
+      let scene, camera, renderer, controls;
+      let robotGroup;
+      let rrFootMarker;
+      let rrTrajectoryLine;
+      let groundGrid;
+
+      function initThree() {
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x070b13);
+
+        camera = new THREE.PerspectiveCamera(50, 1, 0.1, 2000);
+        camera.position.set(220, 160, 220);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        els.threeRoot.appendChild(renderer.domElement);
+
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.rotateSpeed = 0.6;
+        controls.zoomSpeed = 0.9;
+        controls.panSpeed = 0.7;
+        controls.target.set(0, 70, 0);
+        controls.update();
+
+        const keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        keyLight.position.set(100, 180, 120);
+        scene.add(keyLight);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+
+        groundGrid = new THREE.GridHelper(520, 26, 0x374151, 0x1f2937);
+        groundGrid.position.y = 0;
+        scene.add(groundGrid);
+
+        robotGroup = new THREE.Group();
+        scene.add(robotGroup);
+
+        rrFootMarker = new THREE.Mesh(
+          new THREE.SphereGeometry(4, 18, 18),
+          new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0x3b2f00, roughness: 0.5 })
+        );
+        scene.add(rrFootMarker);
+
+        window.addEventListener("resize", resizeThree);
+        resizeThree();
+        loadUrdRobot();
+
+        const raycaster = new THREE.Raycaster();
+        const ndc = new THREE.Vector2();
+        renderer.domElement.addEventListener("pointerdown", (e) => {
+          if (!urdfRobot) return;
+          const rect = renderer.domElement.getBoundingClientRect();
+          const x = (e.clientX - rect.left) / Math.max(1, rect.width);
+          const y = (e.clientY - rect.top) / Math.max(1, rect.height);
+          ndc.set(x * 2 - 1, -(y * 2 - 1));
+          raycaster.setFromCamera(ndc, camera);
+          const hits = raycaster.intersectObject(urdfRobot, true);
+          if (!hits.length) return;
+          let obj = hits[0].object;
+          while (obj && !obj.name && obj.parent) obj = obj.parent;
+          const name = obj && obj.name ? String(obj.name) : "";
+          const m = name.match(/_(FL|FR|BR|BL)_/);
+          if (!m) return;
+          setSelectedLeg(m[1]);
+          recomputeLegSeries();
+          updateTrajectory();
+          drawChart();
+          updatePoseFromTimeline();
+        });
+      }
+
+      function resizeThree() {
+        const rect = els.threeRoot.getBoundingClientRect();
+        const w = Math.max(1, Math.floor(rect.width));
+        const h = Math.max(1, Math.floor(rect.height));
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      }
+
+      function applyPoseToModel(frame) {
+        if (!urdfRobot) return;
+        setRobotPoseFromFrame(frame);
+        urdfRobot.updateMatrixWorld(true);
+        getLegContactPointWorld(state.observe.leg, _tmpV3);
+        rrFootMarker.position.copy(_tmpV3);
+        groundGrid.position.y = ((Number(state.sim.groundOffsetMm) || 0) / 1000) * (Number(state.sim.modelScale) || 1);
+        updateLoadUI();
+      }
+
+      function updateTrajectoryVisibility() {
+        if (rrTrajectoryLine) rrTrajectoryLine.visible = !!state.sim.showTrajectory;
+      }
+
+      function updateTrajectory() {
+        if (!scene || !urdfRobot) return;
+        if (rrTrajectoryLine) {
+          scene.remove(rrTrajectoryLine);
+          rrTrajectoryLine.geometry.dispose();
+          rrTrajectoryLine.material.dispose();
+          rrTrajectoryLine = null;
+        }
+        const frames = state.dataset.frames;
+        if (!frames.length) return;
+
+        const pts = [];
+        const keep = state.playback.frameIndex;
+        const legKey = state.observe.leg;
+        if (!legLinks[legKey]) return;
+        for (let i = 0; i < frames.length; i++) {
+          setRobotPoseFromFrame(frames[i]);
+          urdfRobot.updateMatrixWorld(true);
+          const p = new THREE.Vector3();
+          getLegContactPointWorld(legKey, p);
+          if (Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z)) pts.push(p);
+        }
+        state.playback.frameIndex = clamp(keep, 0, Math.max(0, frames.length - 1));
+        setRobotPoseFromFrame(frames[state.playback.frameIndex]);
+        urdfRobot.updateMatrixWorld(true);
+
+        if (pts.length < 2) return;
+
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+        const mat = new THREE.LineBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.95 });
+        rrTrajectoryLine = new THREE.Line(geo, mat);
+        rrTrajectoryLine.visible = !!state.sim.showTrajectory;
+        scene.add(rrTrajectoryLine);
+      }
+
+      function renderThree(ts) {
+        requestAnimationFrame(renderThree);
+        if (!renderer) return;
+
+        controls.update();
+
+        if (state.sim.isPlaying && state.dataset.frames.length) {
+          if (!state.playback.lastTs) state.playback.lastTs = ts;
+          const dt = ts - state.playback.lastTs;
+          state.playback.lastTs = ts;
+          state.playback.t += dt;
+
+          const poseRes = getPoseAt(state.playback.t);
+          if (poseRes) {
+            const smoothed = smoothPose(poseRes.pose);
+            applyPoseToModel(smoothed);
+            state.playback.frameIndex = clamp(poseRes.frameIndex, 0, Math.max(0, state.dataset.frames.length - 1));
+            els.timeline.value = String(state.playback.frameIndex);
+            updateInfoUI();
+            drawChart();
+          }
+
+          if (!state.sim.loop) {
+            const totalMs = state.dataset.frames.length * getFrameDurationMs();
+            if (state.playback.t >= totalMs) {
+              state.sim.isPlaying = false;
+              els.btnPlay.textContent = "播放";
+            }
+          }
+        } else {
+          const frames = state.dataset.frames;
+          if (frames.length) applyPoseToModel(frames[state.playback.frameIndex]);
+        }
+
+        renderer.render(scene, camera);
+      }
+
+      function drawChart() {
+        const canvas = els.chartCanvas;
+        const wrap = els.chartWrap.getBoundingClientRect();
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const w = Math.max(1, Math.floor(wrap.width));
+        const h = Math.max(1, Math.floor(wrap.height));
+        const cw = Math.floor(w * dpr);
+        const ch = Math.floor(h * dpr);
+        if (canvas.width !== cw || canvas.height !== ch) {
+          canvas.width = cw;
+          canvas.height = ch;
+        }
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        ctx.clearRect(0, 0, cw, ch);
+        ctx.save();
+        ctx.scale(dpr, dpr);
+
+        // 背景
+        ctx.fillStyle = "#0c1628";
+        ctx.fillRect(0, 0, w, h);
+
+        const data = state.observe.heights;
+        if (!data.length) {
+          ctx.fillStyle = "#9ca3af";
+          ctx.font = "12px ui-monospace, monospace";
+          ctx.fillText("未解析到数据", 12, 22);
+          ctx.restore();
+          return;
+        }
+
+        const padL = 38;
+        const padR = 12;
+        const padT = 12;
+        const padB = 22;
+        const plotW = Math.max(1, w - padL - padR);
+        const plotH = Math.max(1, h - padT - padB);
+        const minV = Math.min.apply(null, data);
+        const maxV = Math.max.apply(null, data);
+        const span = Math.max(1e-6, maxV - minV);
+
+        // 网格线
+        ctx.strokeStyle = "rgba(31,41,55,0.9)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let i = 0; i <= 4; i++) {
+          const y = padT + (plotH * i) / 4;
+          ctx.moveTo(padL, y);
+          ctx.lineTo(padL + plotW, y);
+        }
+        ctx.stroke();
+
+        // Y 轴标注
+        ctx.fillStyle = "rgba(156,163,175,0.95)";
+        ctx.font = "11px ui-monospace, monospace";
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        for (let i = 0; i <= 4; i++) {
+          const y = padT + (plotH * i) / 4;
+          const v = maxV - (span * i) / 4;
+          ctx.fillText(v.toFixed(0), padL - 6, y);
+        }
+
+        // 曲线
+        ctx.strokeStyle = "rgba(245,158,11,0.95)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 0; i < data.length; i++) {
+          const x = padL + (plotW * i) / Math.max(1, data.length - 1);
+          const y = padT + ((maxV - data[i]) / span) * plotH;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // 当前帧竖线
+        const idx = clamp(state.playback.frameIndex, 0, data.length - 1);
+        const xNow = padL + (plotW * idx) / Math.max(1, data.length - 1);
+        ctx.strokeStyle = "rgba(96,165,250,0.9)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(xNow, padT);
+        ctx.lineTo(xNow, padT + plotH);
+        ctx.stroke();
+
+        // 峰值点
+        const pIdx = clamp(state.observe.peakIndex, 0, data.length - 1);
+        const xPeak = padL + (plotW * pIdx) / Math.max(1, data.length - 1);
+        const yPeak = padT + ((maxV - data[pIdx]) / span) * plotH;
+        ctx.fillStyle = "rgba(245,158,11,1)";
+        ctx.beginPath();
+        ctx.arc(xPeak, yPeak, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      function chartFrameFromPointer(clientX) {
+        const rect = els.chartWrap.getBoundingClientRect();
+        const x = clientX - rect.left;
+        const padL = 38;
+        const padR = 12;
+        const plotW = Math.max(1, rect.width - padL - padR);
+        const t = clamp((x - padL) / plotW, 0, 1);
+        const n = state.observe.heights.length;
+        const idx = Math.round(t * Math.max(0, n - 1));
+        return clamp(idx, 0, Math.max(0, n - 1));
+      }
+
+      function setupChartEvents() {
+        els.chartWrap.addEventListener("mousemove", (e) => {
+          const data = state.observe.heights;
+          if (!data.length) return;
+          const idx = chartFrameFromPointer(e.clientX);
+          const rect = els.chartWrap.getBoundingClientRect();
+          const tip = els.chartTip;
+          tip.style.display = "block";
+          tip.style.left = `${e.clientX - rect.left}px`;
+          tip.style.top = `${e.clientY - rect.top}px`;
+          tip.innerHTML = `<div class="t">帧 ${idx}</div><div class="v">${fmtMm(data[idx])} mm</div>`;
+        });
+        els.chartWrap.addEventListener("mouseleave", () => {
+          els.chartTip.style.display = "none";
+        });
+        els.chartWrap.addEventListener("click", (e) => {
+          const data = state.observe.heights;
+          if (!data.length) return;
+          const idx = chartFrameFromPointer(e.clientX);
+          state.sim.isPlaying = false;
+          els.btnPlay.textContent = "播放";
+          state.playback.frameIndex = idx;
+          state.playback.t = idx * getFrameDurationMs();
+          state.playback.smoothedPose = null;
+          els.timeline.value = String(idx);
+          updatePoseFromTimeline();
+        });
+      }
+
+      function boot() {
+        setupUI();
+        setupChartEvents();
+        initThree();
+
+        setDatasetFromText(els.dataInput.value);
+        updatePoseFromTimeline();
+        requestAnimationFrame(renderThree);
+      }
+
+      window.addEventListener("load", boot);
+    </script>
+  </body>
+</html>

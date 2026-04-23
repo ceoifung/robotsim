@@ -1,0 +1,627 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-1-g15f4949  Build Version: 1.6.7594.29634
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="xrrobot_urdf">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="-4.4622E-05 0.022396 0.035752"
+        rpy="0 0 0" />
+      <mass
+        value="0.2237" />
+      <inertia
+        ixx="0.001358"
+        ixy="1.139E-07"
+        ixz="-1.5357E-07"
+        iyy="0.0012656"
+        iyz="4.9886E-05"
+        izz="0.00016835" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://xrrobot_urdf/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://xrrobot_urdf/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="Head_Yaw_link">
+    <inertial>
+      <origin
+        xyz="0.00099935 0.034069 0.017518"
+        rpy="0 0 0" />
+      <mass
+        value="0.020008" />
+      <inertia
+        ixx="4.5406E-06"
+        ixy="5.5818E-09"
+        ixz="9.421E-09"
+        iyy="2.5723E-06"
+        iyz="-4.3346E-07"
+        izz="3.182E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://xrrobot_urdf/meshes/Head_Yaw_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://xrrobot_urdf/meshes/Head_Yaw_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Head_Yaw_joint"
+    type="revolute">
+    <origin
+      xyz="0 -0.11149 0.038026"
+      rpy="1.5708 -0.0022105 0.004335" />
+    <parent
+      link="base_link" />
+    <child
+      link="Head_Yaw_link" />
+    <axis
+      xyz="0 -0.89086 -0.45427" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="5" />
+  </joint>
+  <link
+    name="Head_Pitch_link">
+    <inertial>
+      <origin
+        xyz="0.00050757 0.01521 0.014038"
+        rpy="0 0 0" />
+      <mass
+        value="0.046867" />
+      <inertia
+        ixx="4.8561E-05"
+        ixy="-2.5812E-08"
+        ixz="2.4004E-07"
+        iyy="4.2536E-05"
+        iyz="6.2297E-06"
+        izz="1.1693E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://xrrobot_urdf/meshes/Head_Pitch_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://xrrobot_urdf/meshes/Head_Pitch_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Head_Pitch_joint"
+    type="revolute">
+    <origin
+      xyz="0 0.044108 0.022492"
+      rpy="0.04421 -0.00010192 0.00018941" />
+    <parent
+      link="Head_Yaw_link" />
+    <child
+      link="Head_Pitch_link" />
+    <axis
+      xyz="-0.99999 0.0022105 -0.0043349" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="5" />
+  </joint>
+  <link
+    name="Shoulder_FL_link">
+    <inertial>
+      <origin
+        xyz="0.046894 -0.022185 -0.0050405"
+        rpy="0 0 0" />
+      <mass
+        value="0.058539" />
+      <inertia
+        ixx="5.8271E-05"
+        ixy="1.7661E-06"
+        ixz="7.8155E-07"
+        iyy="2.723E-05"
+        iyz="-1.661E-05"
+        izz="3.6507E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://xrrobot_urdf/meshes/Shoulder_FL_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://xrrobot_urdf/meshes/Shoulder_FL_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Shoulder_FL_joint"
+    type="revolute">
+    <origin
+      xyz="0.013 -0.10196 0"
+      rpy="1.4149 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="Shoulder_FL_link" />
+    <axis
+      xyz="-1 0 0" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="5" />
+  </joint>
+  <link
+    name="Knee_FL_link">
+    <inertial>
+      <origin
+        xyz="0.0084814 -0.029397 0.043987"
+        rpy="0 0 0" />
+      <mass
+        value="0.015497" />
+      <inertia
+        ixx="1.2745E-05"
+        ixy="-9.1522E-09"
+        ixz="1.405E-08"
+        iyy="8.6681E-06"
+        iyz="5.4591E-06"
+        izz="4.2696E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://xrrobot_urdf/meshes/Knee_FL_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://xrrobot_urdf/meshes/Knee_FL_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Knee_FL_joint"
+    type="revolute">
+    <origin
+      xyz="0.051997 -0.070165 -0.039773"
+      rpy="-0.47182 0 0" />
+    <parent
+      link="Shoulder_FL_link" />
+    <child
+      link="Knee_FL_link" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="5" />
+  </joint>
+  <link
+    name="Shoulder_FR_link">
+    <inertial>
+      <origin
+        xyz="-0.0449236006183859 -0.0224986053538585 -0.00469599283447582"
+        rpy="0 0 0" />
+      <mass
+        value="0.0556031458340423" />
+      <inertia
+        ixx="5.81147928859559E-05"
+        ixy="-1.76677707483314E-06"
+        ixz="-7.786838038114E-07"
+        iyy="2.70758799340584E-05"
+        iyz="-1.65790587552092E-05"
+        izz="3.64475444620114E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://xrrobot_urdf/meshes/Shoulder_FR_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://xrrobot_urdf/meshes/Shoulder_FR_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Shoulder_FR_joint"
+    type="revolute">
+    <origin
+      xyz="-0.016 -0.10196 0"
+      rpy="1.4163 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="Shoulder_FR_link" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="5" />
+  </joint>
+  <link
+    name="Knee_FR_link">
+    <inertial>
+      <origin
+        xyz="-0.0084817 -0.052906 -0.00022614"
+        rpy="0 0 0" />
+      <mass
+        value="0.015497" />
+      <inertia
+        ixx="1.2745E-05"
+        ixy="1.6569E-08"
+        ixz="-1.0757E-10"
+        iyy="5.8413E-07"
+        iyz="-1.068E-07"
+        izz="1.2353E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://xrrobot_urdf/meshes/Knee_FR_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://xrrobot_urdf/meshes/Knee_FR_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Knee_FR_joint"
+    type="revolute">
+    <origin
+      xyz="-0.048997 -0.070221 -0.039675"
+      rpy="-1.4592 0 0" />
+    <parent
+      link="Shoulder_FR_link" />
+    <child
+      link="Knee_FR_link" />
+    <axis
+      xyz="-1 0 0" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="5" />
+  </joint>
+  <link
+    name="Shoulder_BR_link">
+    <inertial>
+      <origin
+        xyz="-0.041045 -0.014386 0.0098853"
+        rpy="0 0 0" />
+      <mass
+        value="0.071938" />
+      <inertia
+        ixx="7.3852E-05"
+        ixy="-1.8942E-06"
+        ixz="4.3529E-07"
+        iyy="2.6531E-05"
+        iyz="-9.9592E-08"
+        izz="5.6669E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://xrrobot_urdf/meshes/Shoulder_BR_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://xrrobot_urdf/meshes/Shoulder_BR_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Shoulder_BR_joint"
+    type="revolute">
+    <origin
+      xyz="-0.016 0.078042 0"
+      rpy="2.058 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="Shoulder_BR_link" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="5" />
+  </joint>
+  <link
+    name="Knee_BR_link">
+    <inertial>
+      <origin
+        xyz="-0.0084817 -0.052906 -0.00022614"
+        rpy="0 0 0" />
+      <mass
+        value="0.015497" />
+      <inertia
+        ixx="1.2745E-05"
+        ixy="1.6568E-08"
+        ixz="-1.075E-10"
+        iyy="5.8413E-07"
+        iyz="-1.068E-07"
+        izz="1.2353E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://xrrobot_urdf/meshes/Knee_BR_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://xrrobot_urdf/meshes/Knee_BR_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Knee_BR_joint"
+    type="revolute">
+    <origin
+      xyz="-0.048997 -0.08 0.01025"
+      rpy="-2.1009 0 0" />
+    <parent
+      link="Shoulder_BR_link" />
+    <child
+      link="Knee_BR_link" />
+    <axis
+      xyz="-1 0 0" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="5" />
+  </joint>
+  <link
+    name="Shoulder_BL_link">
+    <inertial>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass
+        value="0" />
+      <inertia
+        ixx="0"
+        ixy="0"
+        ixz="0"
+        iyy="0"
+        iyz="0"
+        izz="0" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://xrrobot_urdf/meshes/Shoulder_BL_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://xrrobot_urdf/meshes/Shoulder_BL_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Shoulder_BL_joint"
+    type="revolute">
+    <origin
+      xyz="0.016 0.078042 0"
+      rpy="1.3383 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="Shoulder_BL_link" />
+    <axis
+      xyz="-1 0 0" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="5" />
+  </joint>
+  <link
+    name="Knee_BL_link">
+    <inertial>
+      <origin
+        xyz="0.0084814 -0.029397 0.043987"
+        rpy="0 0 0" />
+      <mass
+        value="0.015497" />
+      <inertia
+        ixx="1.2745E-05"
+        ixy="-9.1524E-09"
+        ixz="1.405E-08"
+        iyy="8.6681E-06"
+        iyz="5.4591E-06"
+        izz="4.2696E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://xrrobot_urdf/meshes/Knee_BL_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://xrrobot_urdf/meshes/Knee_BL_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Knee_BL_joint"
+    type="revolute">
+    <origin
+      xyz="0.048997 -0.066917 -0.045025"
+      rpy="-0.39524 0 0" />
+    <parent
+      link="Shoulder_BL_link" />
+    <child
+      link="Knee_BL_link" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="10"
+      velocity="5" />
+  </joint>
+</robot>

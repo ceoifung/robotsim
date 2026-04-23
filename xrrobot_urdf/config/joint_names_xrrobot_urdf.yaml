@@ -1,0 +1,1 @@
+controller_joint_names: ['', 'Head_Yaw_joint', 'Head_Pitch_joint', 'Shoulder_FL_joint', 'Knee_FL_joint', 'Shoulder_FR_joint', 'Knee_FR_joint', 'Shoulder_BR_joint', 'Knee_BR_joint', 'Shoulder_BL_joint', 'Knee_BL_joint', ]
