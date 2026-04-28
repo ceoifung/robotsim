@@ -462,6 +462,7 @@
                 观测腿高度：<b id="legHeightBadge">-</b>
               </div>
               <div class="badge mono" id="frameBadge">Frame - / -</div>
+              <div class="badge mono" id="basePoseBadge">Base -</div>
             </div>
           </div>
 
@@ -523,6 +524,119 @@
               <div class="chart" id="chartWrap">
                 <canvas id="chartCanvas"></canvas>
                 <div class="chartTip" id="chartTip"></div>
+              </div>
+            </div>
+
+            <div style="margin-top: 12px" class="panel" aria-label="区间平滑">
+              <div class="panel-hd">
+                <h2>区间平滑</h2>
+              </div>
+              <div class="panel-bd">
+                <div class="help" style="margin-bottom: 10px">
+                  中文注释：选择开始帧和结束帧，对该区间内所有舵机角度进行平滑，消除抖动。
+                </div>
+                <div class="grid2">
+                  <div>
+                    <div style="font-size: 11px; color: var(--muted); margin-bottom: 4px;">起始帧</div>
+                    <div class="row" style="flex-wrap: nowrap">
+                      <input id="smoothStartFrame" type="number" min="0" step="1" value="0" />
+                      <button class="btn" id="btnSetSmoothStart" title="设为当前帧">📌</button>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="font-size: 11px; color: var(--muted); margin-bottom: 4px;">结束帧</div>
+                    <div class="row" style="flex-wrap: nowrap">
+                      <input id="smoothEndFrame" type="number" min="0" step="1" value="0" />
+                      <button class="btn" id="btnSetSmoothEnd" title="设为当前帧">📌</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="field" style="margin-top: 10px; border-bottom: none;">
+                  <label for="smoothPasses">平滑次数</label>
+                  <input id="smoothPasses" type="number" min="1" max="20" step="1" value="3" />
+                </div>
+                <div class="row" style="margin-top: 10px">
+                  <button class="btn primary" id="btnRangeSmooth" style="width: 100%">执行平滑</button>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top: 12px" class="panel" aria-label="快速调参">
+              <div class="panel-hd">
+                <h2>快速调参</h2>
+              </div>
+              <div class="panel-bd">
+                <div class="help" style="margin-bottom: 10px">
+                  中文注释：定位到“蹭地帧”后，可直接在这里微调观测腿的大腿/小腿角度，并自动写回左侧数组文本（无需手动去找数组位置）。
+                </div>
+
+                <div class="grid2">
+                  <div class="kv">
+                    <div class="k">本帧大腿角（°）</div>
+                    <div class="v" id="kvTuneThigh">-</div>
+                  </div>
+                  <div class="kv">
+                    <div class="k">本帧小腿角（°）</div>
+                    <div class="v" id="kvTuneCalf">-</div>
+                  </div>
+                </div>
+
+                <div class="grid2" style="margin-top: 10px">
+                  <div class="field">
+                    <label for="tuneStep">步长（°）</label>
+                    <input id="tuneStep" type="number" min="1" step="1" value="2" />
+                  </div>
+                  <div class="field">
+                    <label for="tuneWindow">作用窗口（±帧）</label>
+                    <input id="tuneWindow" type="number" min="0" step="1" value="2" />
+                  </div>
+                </div>
+
+                <div class="row" style="margin-top: 10px">
+                  <button class="btn" id="btnTuneThighMinus">大腿 -</button>
+                  <button class="btn" id="btnTuneThighPlus">大腿 +</button>
+                  <button class="btn" id="btnTuneCalfMinus">小腿 -</button>
+                  <button class="btn" id="btnTuneCalfPlus">小腿 +</button>
+                </div>
+
+                <div class="help" style="margin-top: 10px">
+                  快捷键：↑/↓ 调小腿，←/→ 调大腿；按住 Shift 为 5 倍步长（输入框聚焦时不触发）。
+                </div>
+
+                <div class="hr" style="margin: 12px 0; opacity: 0.25"></div>
+
+                <div class="field" style="margin-top: 8px">
+                  <label for="ikEnable">IK 轨迹生成</label>
+                  <label class="toggle" style="justify-content: flex-end">
+                    <input id="ikEnable" type="checkbox" />
+                    开
+                  </label>
+                </div>
+
+                <div class="row" style="margin-top: 10px">
+                  <button class="btn" id="btnIkRecord">开始录制轨迹</button>
+                  <button class="btn" id="btnIkClear">清除轨迹</button>
+                  <button class="btn primary" id="btnIkApply">生成并写回数组</button>
+                </div>
+
+                <div class="help" style="margin-top: 8px">
+                  已录制点：<b id="ikPointCount">0</b>
+                </div>
+
+                <div class="grid2" style="margin-top: 10px">
+                  <div class="field">
+                    <label for="ikIters">迭代次数</label>
+                    <input id="ikIters" type="number" min="1" step="1" value="24" />
+                  </div>
+                  <div class="field">
+                    <label for="ikDamping">阻尼（0~1）</label>
+                    <input id="ikDamping" type="number" min="0" max="1" step="0.05" value="0.25" />
+                  </div>
+                </div>
+
+                <div class="help" style="margin-top: 10px">
+                  中文注释：开启后，可直接在视窗里拖拽<b>选中腿的足端点（橙色球）</b>或<b>绿色目标点</b>来移动腿；按住 Shift 拖动可调高度（抬脚）。完成后点“生成并写回数组”，会用逆运动学生成为该腿的大腿/小腿关键帧，避免单帧改动造成抖动。
+                </div>
               </div>
             </div>
 
@@ -595,6 +709,38 @@
                   <input id="bodyMass" type="number" min="0" step="0.1" value="1.7" />
                 </div>
                 <div class="field">
+                  <label for="enableMotion">启用移动</label>
+                  <label class="toggle" style="justify-content: flex-end">
+                    <input id="enableMotion" type="checkbox" />
+                    开
+                  </label>
+                </div>
+                <div class="field">
+                  <label for="enablePose">启用姿态</label>
+                  <label class="toggle" style="justify-content: flex-end">
+                    <input id="enablePose" type="checkbox" />
+                    开
+                  </label>
+                </div>
+                <div class="field">
+                  <label for="poseGain">姿态强度</label>
+                  <input id="poseGain" type="number" min="0" step="0.1" value="1.0" />
+                </div>
+                <div class="field">
+                  <label for="showBodyTraj">显示机体轨迹</label>
+                  <label class="toggle" style="justify-content: flex-end">
+                    <input id="showBodyTraj" type="checkbox" checked />
+                    开
+                  </label>
+                </div>
+                <div class="field">
+                  <label for="continuousWalk">持续行走</label>
+                  <label class="toggle" style="justify-content: flex-end">
+                    <input id="continuousWalk" type="checkbox" checked />
+                    开
+                  </label>
+                </div>
+                <div class="field">
                   <label for="applyScale">使用帧头 scale</label>
                   <label class="toggle" style="justify-content: flex-end">
                     <input id="applyScale" type="checkbox" checked />
@@ -628,10 +774,10 @@
       </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/urdf-loader@0.12.6/umd/URDFLoader.js"></script>
+    <script src="./js/three.min.js"></script>
+    <script src="./js/OrbitControls.js"></script>
+    <script src="./js/STLLoader.js"></script>
+    <script src="./js/URDFLoader.js"></script>
     <script>
       const DEG2RAD = Math.PI / 180;
 
@@ -699,6 +845,7 @@
         timeline: document.getElementById("timeline"),
         timelineLabel: document.getElementById("timelineLabel"),
         frameBadge: document.getElementById("frameBadge"),
+        basePoseBadge: document.getElementById("basePoseBadge"),
         legHeightBadge: document.getElementById("legHeightBadge"),
         legPanelTitle: document.getElementById("legPanelTitle"),
         legSelect: document.getElementById("legSelect"),
@@ -716,13 +863,39 @@
         roughFreq: document.getElementById("roughFreq"),
         roughSeed: document.getElementById("roughSeed"),
         bodyMass: document.getElementById("bodyMass"),
+        enableMotion: document.getElementById("enableMotion"),
+        enablePose: document.getElementById("enablePose"),
+        poseGain: document.getElementById("poseGain"),
+        showBodyTraj: document.getElementById("showBodyTraj"),
+        continuousWalk: document.getElementById("continuousWalk"),
         applyScale: document.getElementById("applyScale"),
         invertCalf: document.getElementById("invertCalf"),
         showTraj: document.getElementById("showTraj"),
         chartCanvas: document.getElementById("chartCanvas"),
         chartWrap: document.getElementById("chartWrap"),
         chartTip: document.getElementById("chartTip"),
+        kvTuneThigh: document.getElementById("kvTuneThigh"),
+        kvTuneCalf: document.getElementById("kvTuneCalf"),
+        tuneStep: document.getElementById("tuneStep"),
+        tuneWindow: document.getElementById("tuneWindow"),
+        btnTuneThighMinus: document.getElementById("btnTuneThighMinus"),
+        btnTuneThighPlus: document.getElementById("btnTuneThighPlus"),
+        btnTuneCalfMinus: document.getElementById("btnTuneCalfMinus"),
+        btnTuneCalfPlus: document.getElementById("btnTuneCalfPlus"),
+        ikEnable: document.getElementById("ikEnable"),
+        btnIkRecord: document.getElementById("btnIkRecord"),
+        btnIkClear: document.getElementById("btnIkClear"),
+        btnIkApply: document.getElementById("btnIkApply"),
+        ikIters: document.getElementById("ikIters"),
+        ikDamping: document.getElementById("ikDamping"),
+        ikPointCount: document.getElementById("ikPointCount"),
         btnReset: document.getElementById("btnReset"),
+        smoothStartFrame: document.getElementById("smoothStartFrame"),
+        smoothEndFrame: document.getElementById("smoothEndFrame"),
+        btnSetSmoothStart: document.getElementById("btnSetSmoothStart"),
+        btnSetSmoothEnd: document.getElementById("btnSetSmoothEnd"),
+        smoothPasses: document.getElementById("smoothPasses"),
+        btnRangeSmooth: document.getElementById("btnRangeSmooth"),
         btnHelp: document.getElementById("btnHelp"),
       };
 
@@ -755,12 +928,62 @@
           t: 0,
           lastTs: 0,
           smoothedPose: null,
+          frameFloat: 0,
         },
         observe: {
           leg: "BR",
           heights: [],
           peakIndex: 0,
           peakValue: 0,
+        },
+        ik: {
+          enabled: false,
+          recording: false,
+          dragging: false,
+          dragStart: null,
+          dragPlane: null,
+          dragOffset: null,
+          // 中文注释：录制时按“帧索引”记录拖拽过程中的角度数据（更符合“把拖拽过程写回数组”的需求）。
+          recordedLegKey: "",
+          recordedThighByFrame: [],
+          recordedCalfByFrame: [],
+          // 中文注释：同时保留目标点录制（可用于后续扩展：目标轨迹->自动反解）。
+          targetsLocalByFrame: [],
+          base0Inv: null,
+        },
+        motion: {
+          enabled: false,
+          poseEnabled: false,
+          poseGain: 1.0,
+          showBodyTrajectory: true,
+          continuousWalk: true,
+          // 中文注释：转弯时让机体朝向跟随轨迹切线，避免“侧滑式转弯”
+          followHeading: true,
+          // 中文注释：有些“原地转身”步态几乎没有位移，但 yaw 会变化；此时用脚不滑反推的 yaw 更可靠（否则会看起来一直绕中心不转身）。
+          followHeadingPreferFit: false,
+          cacheValid: false,
+          cachePos: [],
+          cacheQuat: [],
+          cacheYaw: [],
+          cacheTilt: [],
+          cachePosLocal: [],
+          cacheYawHeadLocal: [],
+          cacheYawFitLocal: [],
+          cacheYaw0: 0,
+          cacheYaw0Head: 0,
+          cacheYaw0Fit: 0,
+          cachePos0: null,
+          cycleDeltaYaw: 0,
+          cycleDeltaYawHead: 0,
+          cycleDeltaYawFit: 0,
+          cycleDeltaPosLocal: { x: 0, z: 0 },
+          basePos0: null,
+          baseQuat0: null,
+          // 中文注释：播放过程中持续追加机体轨迹点（不会因为循环而回到原点）
+          pathPts: [],
+          pathLastAppendMs: 0,
+          // 中文注释：姿态修正做平滑，避免某一帧突然倾斜导致“跌倒”
+          rockQuat: new THREE.Quaternion(),
         },
       };
 
@@ -848,9 +1071,10 @@
 
         const foundHeader = Number.isFinite(bestScore) && bestScore !== Number.POSITIVE_INFINITY;
 
-        const frameCount = nums[headerStart] | 0;
-        const scale = Number.isFinite(nums[headerStart + 3]) ? nums[headerStart + 3] : 1;
-        const intervalMs = Number.isFinite(nums[headerStart + 5]) ? nums[headerStart + 5] : 30;
+        const headerRaw6 = nums.slice(headerStart, headerStart + 6).map((x) => (Number.isFinite(x) ? (x | 0) : 0));
+        const frameCount = headerRaw6[0] | 0;
+        const scale = Number.isFinite(headerRaw6[3]) ? headerRaw6[3] : 1;
+        const intervalMs = Number.isFinite(headerRaw6[5]) ? headerRaw6[5] : 30;
 
         if (frameCount <= 0 || frameCount > 2000) {
           const head = nums.slice(0, 12).join(", ");
@@ -887,7 +1111,7 @@
 
         return {
           ok: true,
-          header: { frameCount, scale, intervalMs, headerStart },
+          header: { frameCount, scale, intervalMs, headerStart, raw6: headerRaw6 },
           channelCount,
           frames,
         };
@@ -924,7 +1148,10 @@
 
         const totalMs = n * frameMs;
         let t = timeMs;
+        // 中文注释：循环播放时需要保留“第几圈”，用于持续行走（机体位移不回到原点）。
+        let cycleIndex = 0;
         if (state.sim.loop) {
+          cycleIndex = Math.floor(timeMs / totalMs);
           t = ((t % totalMs) + totalMs) % totalMs;
         } else {
           t = clamp(t, 0, Math.max(0, totalMs - 0.0001));
@@ -937,14 +1164,14 @@
 
         const a = frames[i0];
         if (state.sim.interpolation !== "linear") {
-          return { pose: a, frameIndex: i0, frameFloat: f };
+          return { pose: a, frameIndex: i0, frameFloat: f + cycleIndex * n, cycleIndex };
         }
 
         const b = frames[i1];
         const cc = Math.min(a.length, b.length);
         const out = new Array(cc);
         for (let i = 0; i < cc; i++) out[i] = lerp(a[i], b[i], frac);
-        return { pose: out, frameIndex: i0, frameFloat: f };
+        return { pose: out, frameIndex: i0, frameFloat: f + cycleIndex * n, cycleIndex };
       }
 
       function smoothPose(pose) {
@@ -1069,10 +1296,15 @@
           controls.update();
 
           state.sim.modelScale = Number(urdfRobot.scale.x) || 1;
+          // 中文注释：记录“静止初始位姿”，用于后续做机体移动/姿态的逐帧缓存计算
+          state.motion.basePos0 = urdfRobot.position.clone();
+          state.motion.baseQuat0 = urdfRobot.quaternion.clone();
+          invalidateMotionCache();
           setSelectedLeg(state.observe.leg, false);
           applyPoseToModel(state.dataset.frames[state.playback.frameIndex] || []);
           recomputeLegSeries();
           updateTrajectory();
+          updateBodyTrajectoryFromCache();
           drawChart();
           updateInfoUI();
           setStatus("ok", "URDF 加载完成");
@@ -1215,7 +1447,7 @@
         return (yMm / 1000) * scale;
       }
 
-      function getLegContactPointWorld(legKey, out) {
+      function getLegContactPointWorld(legKey, out, snapToGround) {
         const k = LEG_DEF[legKey] ? legKey : "BR";
         const link = legLinks[k];
         if (!link) {
@@ -1229,7 +1461,9 @@
         }
         out.set((_tmpBox.min.x + _tmpBox.max.x) / 2, _tmpBox.min.y, (_tmpBox.min.z + _tmpBox.max.z) / 2);
         const gy = groundYWorldAtWorldXZ(out.x, out.z);
-        if (out.y < gy) out.y = gy;
+        // 中文注释：支撑腿接触点必须“贴地”，否则拟合地面法向会被抬起的脚误导，出现机体突然大倾角甚至“跌倒”
+        if (snapToGround) out.y = gy;
+        else if (out.y < gy) out.y = gy;
         return true;
       }
 
@@ -1257,9 +1491,12 @@
           return;
         }
 
+        rebuildMotionCacheIfNeeded();
+
         const series = new Array(frames.length);
         const keep = state.playback.frameIndex;
         for (let i = 0; i < frames.length; i++) {
+          applyMotionPoseAt(i);
           setRobotPoseFromFrame(frames[i]);
           urdfRobot.updateMatrixWorld(true);
           series[i] = getLegHeightMmNow(legKey);
@@ -1279,7 +1516,419 @@
         els.btnJumpPeak.disabled = series.length === 0;
 
         state.playback.frameIndex = clamp(keep, 0, Math.max(0, frames.length - 1));
+        applyMotionPoseAt(state.playback.frameIndex);
         setRobotPoseFromFrame(frames[state.playback.frameIndex]);
+      }
+
+      function invalidateMotionCache() {
+        state.motion.cacheValid = false;
+        state.motion.cachePos = [];
+        state.motion.cacheQuat = [];
+        state.motion.cacheYaw = [];
+        state.motion.cacheTilt = [];
+        state.motion.cachePosLocal = [];
+        state.motion.cacheYawHeadLocal = [];
+        state.motion.cacheYawFitLocal = [];
+        state.motion.cacheYaw0 = 0;
+        state.motion.cacheYaw0Head = 0;
+        state.motion.cacheYaw0Fit = 0;
+        state.motion.cachePos0 = null;
+        state.motion.cycleDeltaYaw = 0;
+        state.motion.cycleDeltaYawHead = 0;
+        state.motion.cycleDeltaYawFit = 0;
+        state.motion.cycleDeltaPosLocal = { x: 0, z: 0 };
+        state.motion.pathPts = state.motion.pathPts || [];
+      }
+
+      function rebuildMotionCacheIfNeeded() {
+        if (!urdfRobot) return;
+        if (!state.motion.enabled && !state.motion.poseEnabled) {
+          state.motion.cacheValid = true;
+          state.motion.cachePos = [];
+          state.motion.cacheQuat = [];
+          return;
+        }
+        if (state.motion.cacheValid) return;
+        rebuildMotionCache();
+        updateBodyTrajectoryFromCache();
+      }
+
+      function applyMotionPoseAt(frameFloat) {
+        if (!urdfRobot) return;
+        const basePos0 = state.motion.basePos0;
+        const baseQuat0 = state.motion.baseQuat0;
+        if (!state.motion.enabled && !state.motion.poseEnabled) {
+          if (basePos0) urdfRobot.position.copy(basePos0);
+          if (baseQuat0) urdfRobot.quaternion.copy(baseQuat0);
+          return;
+        }
+
+        const posArr = state.motion.cachePos;
+        const quatArr = state.motion.cacheQuat;
+        if (!posArr || !quatArr || posArr.length === 0 || quatArr.length === 0) {
+          if (basePos0) urdfRobot.position.copy(basePos0);
+          if (baseQuat0) urdfRobot.quaternion.copy(baseQuat0);
+          return;
+        }
+
+        const yawArr = state.motion.cacheYaw || [];
+        const tiltArr = state.motion.cacheTilt || [];
+        const posLocalArr = state.motion.cachePosLocal || [];
+        const yawHeadLocalArr = state.motion.cacheYawHeadLocal || [];
+        const yawFitLocalArr = state.motion.cacheYawFitLocal || [];
+        const yaw0Head = Number(state.motion.cacheYaw0Head) || Number(state.motion.cacheYaw0) || 0;
+        const yaw0Fit = Number(state.motion.cacheYaw0Fit) || 0;
+        const pos0 = state.motion.cachePos0 || posArr[0];
+        const cycleYawHead = Number(state.motion.cycleDeltaYawHead) || Number(state.motion.cycleDeltaYaw) || 0;
+        const cycleYawFit = Number(state.motion.cycleDeltaYawFit) || 0;
+        const cyclePosL = state.motion.cycleDeltaPosLocal || { x: 0, z: 0 };
+
+        const n = posArr.length;
+        const tAll = Math.max(0, Number(frameFloat) || 0);
+        const cycle = state.motion.continuousWalk && state.sim.loop ? Math.floor(tAll / n) : 0;
+        const t = state.motion.continuousWalk && state.sim.loop ? tAll - cycle * n : clamp(tAll, 0, Math.max(0, n - 1));
+        const i0 = Math.floor(t);
+        const i1 = Math.min(n - 1, i0 + 1);
+        const frac = t - i0;
+
+        const y = lerp(posArr[i0].y, posArr[i1].y, frac);
+
+        // 中文注释：持续行走时按“周期刚体变换(Δyaw, Δpos)”重复叠加，转弯步态也会产生弧线轨迹。
+        const isCont =
+          state.motion.continuousWalk &&
+          state.sim.loop &&
+          posLocalArr.length === n &&
+          tiltArr.length === n &&
+          baseQuat0;
+        if (isCont) {
+          const pL0 = posLocalArr[i0];
+          const pL1 = posLocalArr[i1];
+          const pLx = lerp(pL0.x, pL1.x, frac);
+          const pLz = lerp(pL0.z, pL1.z, frac);
+
+          const followOk = state.motion.followHeading && yawHeadLocalArr.length === n && yawFitLocalArr.length === n;
+          const useFit = followOk && !!state.motion.followHeadingPreferFit;
+          const useHead = followOk && !useFit;
+
+          const yaw0 = useHead ? yaw0Head : yaw0Fit;
+          const cycleYaw = useHead ? cycleYawHead : cycleYawFit;
+          const yawL0 = useHead ? yawHeadLocalArr[i0] : yawFitLocalArr[i0];
+          const yawL1 = useHead ? yawHeadLocalArr[i1] : yawFitLocalArr[i1];
+          const yawLocal = lerp(yawL0, yawL1, frac);
+          const yawWorld = yaw0 + cycle * cycleYaw + yawLocal;
+
+          const sum = sumRotSeries2(cyclePosL.x, cyclePosL.z, cycleYaw, cycle);
+          const pr = rot2(pLx, pLz, cycle * cycleYaw);
+          const lx = sum.x + pr.x;
+          const lz = sum.z + pr.z;
+          const w = rot2(lx, lz, yaw0);
+          urdfRobot.position.set(pos0.x + w.x, y, pos0.z + w.z);
+
+          const qYaw = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yawWorld);
+          const tilt = tiltArr[i0].clone().slerp(tiltArr[i1], frac);
+          // 中文注释：yaw 以世界坐标的“向上轴”为准（不受 baseQuat0 的固有朝向影响）
+          urdfRobot.quaternion.copy(baseQuat0).premultiply(qYaw).multiply(tilt);
+          return;
+        }
+
+        urdfRobot.position.lerpVectors(posArr[i0], posArr[i1], frac);
+        urdfRobot.quaternion.copy(quatArr[i0]).slerp(quatArr[i1], frac);
+      }
+
+      function rot2(x, z, yawRad) {
+        const c = Math.cos(yawRad);
+        const s = Math.sin(yawRad);
+        return { x: x * c - z * s, z: x * s + z * c };
+      }
+
+      function sumRotSeries2(vx, vz, yawRad, k) {
+        const kk = Math.max(0, Math.floor(k));
+        if (kk === 0) return { x: 0, z: 0 };
+        if (Math.abs(yawRad) < 1e-6) return { x: vx * kk, z: vz * kk };
+        const a = yawRad * kk;
+        const numx = 1 - Math.cos(a);
+        const numz = -Math.sin(a);
+        const denx = 1 - Math.cos(yawRad);
+        const denz = -Math.sin(yawRad);
+        const den2 = denx * denx + denz * denz;
+        const qx = (numx * denx + numz * denz) / den2;
+        const qz = (numz * denx - numx * denz) / den2;
+        return { x: qx * vx - qz * vz, z: qx * vz + qz * vx };
+      }
+
+      function clampQuatTilt(q, maxRad) {
+        const qq = q.clone();
+        qq.normalize();
+        const angle = 2 * Math.acos(clamp(qq.w, -1, 1));
+        if (!Number.isFinite(angle) || angle <= maxRad) return qq;
+        const axis = new THREE.Vector3(qq.x, qq.y, qq.z);
+        const s = Math.sqrt(Math.max(1e-12, 1 - qq.w * qq.w));
+        axis.multiplyScalar(1 / s);
+        return new THREE.Quaternion().setFromAxisAngle(axis, maxRad);
+      }
+
+      function rebuildMotionCache() {
+        const frames = state.dataset.frames;
+        if (!frames.length) {
+          state.motion.cachePos = [];
+          state.motion.cacheQuat = [];
+          state.motion.cacheValid = true;
+          return;
+        }
+        if (!state.motion.basePos0 || !state.motion.baseQuat0) {
+          state.motion.cachePos = [];
+          state.motion.cacheQuat = [];
+          state.motion.cacheValid = true;
+          return;
+        }
+
+        const basePos0 = state.motion.basePos0.clone();
+        const baseQuat0 = state.motion.baseQuat0.clone();
+        // 中文注释：先清空旧缓存，避免缓存构建过程中误用旧数据
+        state.motion.cachePos = [];
+        state.motion.cacheQuat = [];
+        state.motion.cacheYaw = [];
+        state.motion.cacheTilt = [];
+        state.motion.cachePosLocal = [];
+        state.motion.cacheYaw0 = 0;
+        state.motion.cachePos0 = null;
+        state.motion.cycleDeltaYaw = 0;
+        state.motion.cycleDeltaPosLocal = { x: 0, z: 0 };
+        const posArr = new Array(frames.length);
+        const quatArr = new Array(frames.length);
+        const yawArr = new Array(frames.length);
+        const tiltArr = new Array(frames.length);
+
+        const scale = Number(state.sim.modelScale) || 1;
+        const epsWorld = (2 / 1000) * scale;
+        const anchors = {};
+
+        let pos = basePos0.clone();
+        let yaw = 0;
+        let tilt = new THREE.Quaternion();
+        const up = new THREE.Vector3(0, 1, 0);
+        const yAxis = new THREE.Vector3(0, 1, 0);
+        const _p = new THREE.Vector3();
+
+        for (let i = 0; i < frames.length; i++) {
+          // 中文注释：用当前关节角计算各腿足端位置，再通过“支撑腿足端不滑”反推机体平移/偏航（转弯也可表现出来）。
+          const qYaw = new THREE.Quaternion().setFromAxisAngle(yAxis, yaw);
+          urdfRobot.position.copy(pos);
+          urdfRobot.quaternion.copy(baseQuat0).premultiply(qYaw).multiply(tilt);
+          setRobotPoseFromFrame(frames[i]);
+          urdfRobot.updateMatrixWorld(true);
+
+          const stance = [];
+          for (const k of LEG_KEYS) {
+            const link = legLinks[k];
+            if (!link) continue;
+            const box = new THREE.Box3().setFromObject(link);
+            if (!isBoxValid(box)) continue;
+            const x = (box.min.x + box.max.x) / 2;
+            const z = (box.min.z + box.max.z) / 2;
+            const gy = groundYWorldAtWorldXZ(x, z);
+            const inContact = box.min.y <= gy + epsWorld;
+            if (inContact) stance.push(k);
+          }
+
+          if (state.motion.enabled && stance.length) {
+            const pairs = [];
+            for (const k of stance) {
+              if (!anchors[k]) continue;
+              if (!getLegContactPointWorld(k, _p, true)) continue;
+              pairs.push({ px: _p.x, pz: _p.z, ax: anchors[k].x, az: anchors[k].z });
+            }
+            if (pairs.length >= 2) {
+              let pCx = 0;
+              let pCz = 0;
+              let aCx = 0;
+              let aCz = 0;
+              for (const it of pairs) {
+                pCx += it.px;
+                pCz += it.pz;
+                aCx += it.ax;
+                aCz += it.az;
+              }
+              pCx /= pairs.length;
+              pCz /= pairs.length;
+              aCx /= pairs.length;
+              aCz /= pairs.length;
+
+              let dot = 0;
+              let cross = 0;
+              for (const it of pairs) {
+                const px = it.px - pCx;
+                const pz = it.pz - pCz;
+                const ax = it.ax - aCx;
+                const az = it.az - aCz;
+                dot += px * ax + pz * az;
+                cross += px * az - pz * ax;
+              }
+              const theta = Math.atan2(cross, dot);
+              const c = Math.cos(theta);
+              const s = Math.sin(theta);
+              const rPx = c * pCx - s * pCz;
+              const rPz = s * pCx + c * pCz;
+              const tx = aCx - rPx;
+              const tz = aCz - rPz;
+
+              yaw += theta;
+              pos.x += tx;
+              pos.z += tz;
+
+              const qYaw2 = new THREE.Quaternion().setFromAxisAngle(yAxis, yaw);
+              urdfRobot.position.copy(pos);
+              urdfRobot.quaternion.copy(baseQuat0).premultiply(qYaw2).multiply(tilt);
+              urdfRobot.updateMatrixWorld(true);
+            }
+          }
+
+          // 中文注释：更新支撑腿锚点，让接触地面的脚“贴住”地面。
+          if (state.motion.enabled) {
+            const nextAnchors = {};
+            for (const k of stance) {
+              const p = new THREE.Vector3();
+              if (!getLegContactPointWorld(k, p, true)) continue;
+              nextAnchors[k] = { x: p.x, z: p.z };
+            }
+            for (const k of Object.keys(nextAnchors)) anchors[k] = nextAnchors[k];
+            for (const k of Object.keys(anchors)) if (!nextAnchors[k]) delete anchors[k];
+          }
+
+          // 中文注释：根据支撑腿接触点拟合地面法向，给机体一个随地形变化的 roll/pitch（限制最大倾角避免发散）。
+          if (state.motion.poseEnabled) {
+            const pts = [];
+            for (const k of stance) {
+              const p = new THREE.Vector3();
+              if (getLegContactPointWorld(k, p, true)) pts.push(p);
+            }
+            if (pts.length >= 3) {
+              const v1 = pts[1].clone().sub(pts[0]);
+              const v2 = pts[2].clone().sub(pts[0]);
+              const n = v1.cross(v2);
+              if (n.lengthSq() > 1e-10) {
+                n.normalize();
+                if (n.y < 0) n.negate();
+                const q = new THREE.Quaternion().setFromUnitVectors(up, n);
+                tilt = clampQuatTilt(q, 20 * DEG2RAD);
+              }
+            } else {
+              // 中文注释：支撑点不足时，让倾角逐渐回正，避免残留倾斜看起来“不对劲”
+              tilt.slerp(new THREE.Quaternion(), 0.15);
+            }
+          }
+
+          // 中文注释：最后做一次“抬升”，保证支撑腿不会穿地（粗糙地面情况下尤为重要）。
+          const qYaw3 = new THREE.Quaternion().setFromAxisAngle(yAxis, yaw);
+          urdfRobot.position.copy(pos);
+          urdfRobot.quaternion.copy(baseQuat0).premultiply(qYaw3).multiply(tilt);
+          setRobotPoseFromFrame(frames[i]);
+          urdfRobot.updateMatrixWorld(true);
+          let lift = 0;
+          for (const k of LEG_KEYS) {
+            const link = legLinks[k];
+            if (!link) continue;
+            const box = new THREE.Box3().setFromObject(link);
+            if (!isBoxValid(box)) continue;
+            const x = (box.min.x + box.max.x) / 2;
+            const z = (box.min.z + box.max.z) / 2;
+            const gy = groundYWorldAtWorldXZ(x, z);
+            const d = gy - box.min.y;
+            if (d > lift) lift = d;
+          }
+          if (lift > 0) pos.y += lift;
+
+          posArr[i] = pos.clone();
+          yawArr[i] = yaw;
+          tiltArr[i] = tilt.clone();
+          quatArr[i] = baseQuat0.clone().premultiply(new THREE.Quaternion().setFromAxisAngle(yAxis, yaw)).multiply(tilt);
+        }
+
+        state.motion.cachePos = posArr;
+        state.motion.cacheQuat = quatArr;
+        state.motion.cacheYaw = yawArr;
+        state.motion.cacheTilt = tiltArr;
+
+        const posStart = posArr[0] || basePos0;
+        // 中文注释：用“速度方向(切线)”作为机体朝向，可避免转弯时出现“侧滑”观感
+        const yawHeadW = new Array(frames.length);
+        let lastYaw = 0;
+        for (let i = 0; i < frames.length; i++) {
+          const p0 = posArr[i];
+          const p1 = posArr[Math.min(frames.length - 1, i + 1)];
+          const vx = p1.x - p0.x;
+          const vz = p1.z - p0.z;
+          if (Math.abs(vx) + Math.abs(vz) < 1e-8) {
+            yawHeadW[i] = lastYaw;
+          } else {
+            // 中文注释：本项目把“yaw=0”定义为朝 +X（URDF/ROS 常见前向），因此用 atan2(vz, vx) 计算轨迹切线朝向；否则会出现机体整体偏 90° 的“横着走”观感。
+            const a = Math.atan2(vz, vx);
+            yawHeadW[i] = a;
+            lastYaw = a;
+          }
+        }
+        // 中文注释：对朝向做一点平滑，避免方向抖动
+        for (let i = 1; i < yawHeadW.length; i++) {
+          const prev = yawHeadW[i - 1];
+          let cur = yawHeadW[i];
+          while (cur - prev > Math.PI) cur -= Math.PI * 2;
+          while (cur - prev < -Math.PI) cur += Math.PI * 2;
+          yawHeadW[i] = prev + 0.35 * (cur - prev);
+        }
+
+        // 中文注释：第二套 yaw 来源：用“脚不滑约束”反推的 yaw（yawArr），可覆盖“原地转身(位移很小但 yaw 很大)”的场景。
+        const yawFitLocal = new Array(frames.length);
+        {
+          const base = Number.isFinite(yawArr[0]) ? yawArr[0] : 0;
+          let last = base;
+          for (let i = 0; i < frames.length; i++) {
+            let cur = Number.isFinite(yawArr[i]) ? yawArr[i] : last;
+            while (cur - last > Math.PI) cur -= Math.PI * 2;
+            while (cur - last < -Math.PI) cur += Math.PI * 2;
+            cur = last + 0.35 * (cur - last);
+            yawFitLocal[i] = cur - base;
+            last = cur;
+          }
+        }
+
+        const yawStart = yawHeadW[0] || 0;
+        state.motion.cacheYaw0 = yawStart;
+        state.motion.cacheYaw0Head = yawStart;
+        // 中文注释：为保证“持续行走”的局部坐标计算与位置缓存一致，这里让两套 yaw 都以 yawStart 作为世界基准。
+        state.motion.cacheYaw0Fit = yawStart;
+        state.motion.cachePos0 = posStart.clone();
+        const posLocalArr = new Array(frames.length);
+        for (let i = 0; i < frames.length; i++) {
+          const dx = posArr[i].x - posStart.x;
+          const dz = posArr[i].z - posStart.z;
+          const r = rot2(dx, dz, -yawStart);
+          posLocalArr[i] = { x: r.x, z: r.z };
+        }
+        state.motion.cachePosLocal = posLocalArr;
+        const yawHeadLocal = new Array(frames.length);
+        for (let i = 0; i < frames.length; i++) {
+          let a = yawHeadW[i] - yawStart;
+          while (a > Math.PI) a -= Math.PI * 2;
+          while (a < -Math.PI) a += Math.PI * 2;
+          yawHeadLocal[i] = a;
+        }
+        state.motion.cacheYawHeadLocal = yawHeadLocal;
+
+        // 中文注释：根据“本周期净位移”判断是否更像“原地转身”；原地转身时用 yawFitLocal 来累计转身角，避免看起来一直绕中心不转身。
+        const dxC = (posArr[frames.length - 1] ? posArr[frames.length - 1].x : posStart.x) - posStart.x;
+        const dzC = (posArr[frames.length - 1] ? posArr[frames.length - 1].z : posStart.z) - posStart.z;
+        const moveMag = Math.hypot(dxC, dzC);
+        const moveThresh = (6 / 1000) * scale; // 6mm
+        const turnFit = Math.abs((yawFitLocal[frames.length - 1] || 0) - (yawFitLocal[0] || 0));
+        state.motion.followHeadingPreferFit = moveMag < moveThresh && turnFit > 2 * DEG2RAD;
+
+        state.motion.cacheYawFitLocal = yawFitLocal;
+        state.motion.cycleDeltaYawHead = (yawHeadW[frames.length - 1] || 0) - yawStart;
+        state.motion.cycleDeltaYawFit = (yawFitLocal[frames.length - 1] || 0) - (yawFitLocal[0] || 0);
+        // 中文注释：保留旧字段，默认取“切线朝向”的周期转角
+        state.motion.cycleDeltaYaw = state.motion.cycleDeltaYawHead;
+        state.motion.cycleDeltaPosLocal = posLocalArr[frames.length - 1] || { x: 0, z: 0 };
+        state.motion.cacheValid = true;
       }
 
       function fmtMm(n) {
@@ -1304,6 +1953,440 @@
         els.kvNow.textContent = fmtMm(now);
         els.legHeightBadge.textContent = fmtMm(now) + " mm";
         els.kvPeak.textContent = fmtMm(state.observe.peakValue);
+
+        if (els.basePoseBadge) {
+          if (!urdfRobot || !state.sim.modelScale) {
+            els.basePoseBadge.textContent = "Base -";
+          } else {
+            const scale = Number(state.sim.modelScale) || 1;
+            const xMm = (urdfRobot.position.x / scale) * 1000;
+            const zMm = (urdfRobot.position.z / scale) * 1000;
+            let tiltDeg = 0;
+            let yawDeg = 0;
+            let rollDeg = 0;
+            let pitchDeg = 0;
+            if (state.motion.baseQuat0) {
+              const qRel = state.motion.baseQuat0.clone().invert().multiply(urdfRobot.quaternion);
+              const e = new THREE.Euler().setFromQuaternion(qRel, "YXZ");
+              yawDeg = (Number.isFinite(e.y) ? e.y : 0) / DEG2RAD;
+              pitchDeg = (Number.isFinite(e.x) ? e.x : 0) / DEG2RAD;
+              rollDeg = (Number.isFinite(e.z) ? e.z : 0) / DEG2RAD;
+              tiltDeg = Math.sqrt(pitchDeg * pitchDeg + rollDeg * rollDeg);
+            }
+            els.basePoseBadge.textContent = `Base x=${xMm.toFixed(0)} z=${zMm.toFixed(0)}  yaw=${yawDeg.toFixed(1)}° roll=${rollDeg.toFixed(1)}° pitch=${pitchDeg.toFixed(1)}°`;
+          }
+        }
+        // 中文注释：同步更新“快速调参”面板里的当前帧角度显示
+        updateQuickTunerUI();
+      }
+
+      function getLegTuneChannelIndices(legKey) {
+        // 中文注释：数组约定：0头Yaw 1头Pitch 2FL大腿 3FR大腿 4BR大腿 5BL大腿 6FL小腿 7FR小腿 8BR小腿 9BL小腿
+        const k = LEG_DEF[legKey] ? legKey : "BR";
+        if (k === "FL") return { thigh: 2, calf: 6 };
+        if (k === "FR") return { thigh: 3, calf: 7 };
+        if (k === "BR") return { thigh: 4, calf: 8 };
+        return { thigh: 5, calf: 9 };
+      }
+
+      function updateQuickTunerUI() {
+        if (!els.kvTuneThigh || !els.kvTuneCalf) return;
+        const frames = state.dataset.frames;
+        if (!frames || !frames.length) {
+          els.kvTuneThigh.textContent = "-";
+          els.kvTuneCalf.textContent = "-";
+          return;
+        }
+        const i = clamp(Number(state.playback.frameIndex) || 0, 0, Math.max(0, frames.length - 1));
+        const f = frames[i] || [];
+        const idx = getLegTuneChannelIndices(state.observe.leg);
+        const thigh = Number.isFinite(f[idx.thigh]) ? f[idx.thigh] : 0;
+        const calf = Number.isFinite(f[idx.calf]) ? f[idx.calf] : 0;
+        els.kvTuneThigh.textContent = String(thigh);
+        els.kvTuneCalf.textContent = String(calf);
+      }
+
+      function buildNumbersBlock(headerRaw6, frames, channelCount) {
+        const h = Array.isArray(headerRaw6) && headerRaw6.length >= 6 ? headerRaw6.slice(0, 6) : [frames.length, 0, 0, 1, 0, 30];
+        h[0] = frames.length | 0;
+        const cc = Math.max(1, Number(channelCount) || 10);
+
+        const lines = [];
+        lines.push(`  ${h.map((n) => String(n | 0)).join(", ")},`);
+        for (let i = 0; i < frames.length; i++) {
+          const f = frames[i] || [];
+          const arr = [];
+          for (let j = 0; j < cc; j++) {
+            const v = Number.isFinite(f[j]) ? (f[j] | 0) : 0;
+            arr.push(v);
+          }
+          lines.push(`  ${arr.join(", ")},`);
+        }
+        return lines.join("\n");
+      }
+
+      function writeDatasetBackToTextArea() {
+        // 中文注释：把当前 frames 的修改自动写回左侧文本，用户就不用再去手工找数组位置改了。
+        const raw = String(state.dataset.rawText || els.dataInput.value || "");
+        const headerRaw6 = (state.dataset.header && state.dataset.header.raw6) || null;
+        const body = buildNumbersBlock(headerRaw6, state.dataset.frames || [], state.dataset.channelCount || 10);
+
+        const l = raw.lastIndexOf("{");
+        const r = raw.lastIndexOf("}");
+        let out = "";
+        if (l >= 0 && r > l) {
+          out = raw.slice(0, l + 1) + "\n" + body + "\n" + raw.slice(r);
+        } else {
+          const m = raw.match(/const\s+int8_t\s+([A-Za-z_]\w*)/);
+          const name = m && m[1] ? m[1] : "user_edit";
+          out = `const int8_t ${name}[] PROGMEM = {\n${body}\n};\n`;
+        }
+
+        els.dataInput.value = out;
+        state.dataset.rawText = out;
+        window.localStorage.setItem("gait_sim_raw", out);
+      }
+
+      function applyQuickTune(part, delta) {
+        const frames = state.dataset.frames;
+        if (!frames || !frames.length) return;
+        const i = clamp(Number(state.playback.frameIndex) || 0, 0, Math.max(0, frames.length - 1));
+        const w = Math.max(0, Math.floor(Number(els.tuneWindow && els.tuneWindow.value) || 0));
+        const d = Number.isFinite(delta) ? Math.trunc(delta) : 0;
+        if (!d) return;
+
+        const idx = getLegTuneChannelIndices(state.observe.leg);
+        const ch = part === "thigh" ? idx.thigh : idx.calf;
+        if (Number(state.dataset.channelCount) <= ch) return;
+
+        for (let off = -w; off <= w; off++) {
+          const j = i + off;
+          if (j < 0 || j >= frames.length) continue;
+          const f = frames[j];
+          if (!Array.isArray(f)) continue;
+          const cur = Number.isFinite(f[ch]) ? (f[ch] | 0) : 0;
+          f[ch] = cur + d;
+        }
+
+        // 中文注释：更新缓存/曲线/轨迹，并把修改写回文本，做到“定位帧后直接改、立刻生效”。
+        invalidateMotionCache();
+        recomputeLegSeries();
+        updateTrajectory();
+        updateBodyTrajectoryFromCache();
+        updatePoseFromTimeline();
+        drawChart();
+        updateInfoUI();
+        writeDatasetBackToTextArea();
+      }
+
+      function applyRangeSmooth(start, end, passes) {
+        const frames = state.dataset.frames;
+        if (!frames || !frames.length) return;
+        const n = frames.length;
+        const chCount = Number(state.dataset.channelCount) || 10;
+
+        let s = clamp(Math.min(start, end), 0, n - 1);
+        let e = clamp(Math.max(start, end), 0, n - 1);
+        if (s >= e) {
+          alert("起始帧必须小于结束帧，且区间长度至少为 2 帧");
+          return;
+        }
+
+        // 中文注释：对指定区间的每一帧的所有舵机进行多次滑动平均平滑（消除高频抖动）
+        for (let p = 0; p < passes; p++) {
+          const oldFrames = frames.map(f => (f.slice ? f.slice() : Array.from(f)));
+          for (let i = s; i <= e; i++) {
+            for (let c = 0; c < chCount; c++) {
+              let prev = i > 0 ? oldFrames[i - 1][c] : oldFrames[i][c];
+              let curr = oldFrames[i][c];
+              let next = i < n - 1 ? oldFrames[i + 1][c] : oldFrames[i][c];
+              frames[i][c] = Math.round((prev + curr + next) / 3);
+            }
+          }
+        }
+
+        invalidateMotionCache();
+        recomputeLegSeries();
+        updateTrajectory();
+        updateBodyTrajectoryFromCache();
+        updatePoseFromTimeline();
+        drawChart();
+        updateInfoUI();
+        writeDatasetBackToTextArea();
+      }
+
+      function rebuildIkPathLine(pointsWorld) {
+        if (!scene) return;
+        if (!state.ik) return;
+        if (ikPathLine) {
+          scene.remove(ikPathLine);
+          ikPathLine.geometry.dispose();
+          ikPathLine.material.dispose();
+          ikPathLine = null;
+        }
+        if (!pointsWorld || pointsWorld.length < 2) return;
+        const geo = new THREE.BufferGeometry().setFromPoints(pointsWorld);
+        const mat = new THREE.LineBasicMaterial({ color: 0x22c55e, transparent: true, opacity: 0.95 });
+        ikPathLine = new THREE.Line(geo, mat);
+        scene.add(ikPathLine);
+      }
+
+      function clearIkPath() {
+        state.ik.recordedLegKey = "";
+        state.ik.recordedThighByFrame = [];
+        state.ik.recordedCalfByFrame = [];
+        state.ik.targetsLocalByFrame = [];
+        state.ik.base0Inv = null;
+        rebuildIkPathLine([]);
+      }
+
+      function setIkEnabled(on) {
+        state.ik.enabled = !!on;
+        if (!state.ik.enabled) {
+          state.ik.recording = false;
+          state.ik.dragging = false;
+          clearIkPath();
+        }
+        updateIkViz();
+      }
+
+      function updateIkViz() {
+        if (!ikTargetMarker) return;
+        const enabled = !!(state.ik && state.ik.enabled);
+        ikTargetMarker.visible = enabled;
+        if (ikPathLine) ikPathLine.visible = enabled;
+        if (els.ikPointCount) {
+          const a = state.ik && state.ik.recordedThighByFrame ? state.ik.recordedThighByFrame : [];
+          const b = state.ik && state.ik.recordedCalfByFrame ? state.ik.recordedCalfByFrame : [];
+          const n = Math.max(a.length, b.length);
+          let cnt = 0;
+          for (let i = 0; i < n; i++) if (a[i] != null || b[i] != null) cnt++;
+          els.ikPointCount.textContent = String(cnt);
+        }
+        if (!enabled) return;
+        if (!urdfRobot) return;
+        // 中文注释：拖拽时 marker 表示“目标点”，不要被刷新覆盖回当前足端位置。
+        if (state.ik.dragging) return;
+        const p = new THREE.Vector3();
+        getLegContactPointWorld(state.observe.leg, p, false);
+        ikTargetMarker.position.copy(p);
+      }
+
+      function beginIkRecordFromFirstFrame() {
+        if (!urdfRobot || !state.dataset.frames.length) return;
+        // 中文注释：开始录制不自动播放；用户直接在画面上拖拽选中的足端，拖拽松开后会自动映射并写回。
+        state.playback.t = 0;
+        state.playback.frameIndex = 0;
+        state.playback.lastTs = 0;
+        state.playback.smoothedPose = null;
+        state.playback.frameFloat = 0;
+        els.timeline.value = "0";
+        updatePoseFromTimeline();
+        urdfRobot.updateMatrixWorld(true);
+
+        // 中文注释：记录首帧机体坐标系到世界的逆变换，用于把拖拽轨迹存成“机体局部轨迹”。
+        state.ik.base0Inv = urdfRobot.matrixWorld.clone().invert();
+        state.ik.recording = true;
+        state.ik.rawDragPath = [];
+        setStatus("ok", "IK 录制中：直接在画面上拖拽足端画出轨迹，松开鼠标后将自动映射并平滑写回数组。");
+
+        const pW = new THREE.Vector3();
+        getLegContactPointWorld(state.observe.leg, pW, false);
+        if (ikTargetMarker) ikTargetMarker.position.copy(pW);
+        rebuildIkPathLine([pW.clone()]);
+        updateIkViz();
+      }
+
+      function endIkRecord() {
+        state.ik.recording = false;
+        updateIkViz();
+      }
+
+      function resamplePolylineByArcLength(pts, count) {
+        const n = pts.length;
+        const c = Math.max(2, Math.floor(count) || 2);
+        if (n < 2) return pts.slice(0, 1);
+        const cum = new Array(n).fill(0);
+        for (let i = 1; i < n; i++) {
+          cum[i] = cum[i - 1] + pts[i].distanceTo(pts[i - 1]);
+        }
+        const total = cum[n - 1];
+        if (total <= 1e-9) return Array.from({ length: c }, () => pts[0].clone());
+        const out = [];
+        let seg = 1;
+        for (let i = 0; i < c; i++) {
+          const s = (total * i) / (c - 1);
+          while (seg < n && cum[seg] < s) seg++;
+          const j = clamp(seg, 1, n - 1);
+          const s0 = cum[j - 1];
+          const s1 = cum[j];
+          const t = s1 > s0 ? (s - s0) / (s1 - s0) : 0;
+          out.push(pts[j - 1].clone().lerp(pts[j], t));
+        }
+        return out;
+      }
+
+      function setLegAnglesDegForIk(legKey, thighDeg, calfDeg, frame) {
+        const idx = getLegTuneChannelIndices(legKey);
+        const f = frame || [];
+        const scale = getAngleScale();
+        const inv = state.sim.invertCalf ? -1 : 1;
+
+        // 中文注释：除目标腿外，其他关节先用原帧值，避免 IK 解影响全身。
+        setRobotPoseFromFrame(f);
+
+        const thighRad = JOINT_SIGN[idx.thigh === 2 ? "thighFL" : idx.thigh === 3 ? "thighFR" : idx.thigh === 4 ? "thighRR" : "thighRL"] * (thighDeg || 0) * scale * DEG2RAD;
+        const calfRad =
+          JOINT_SIGN[idx.calf === 6 ? "calfFL" : idx.calf === 7 ? "calfFR" : idx.calf === 8 ? "calfRR" : "calfRL"] *
+          inv *
+          (calfDeg || 0) *
+          scale *
+          DEG2RAD;
+
+        const thighJoint =
+          legKey === "FL" ? JOINT_MAP.thighFL : legKey === "FR" ? JOINT_MAP.thighFR : legKey === "BR" ? JOINT_MAP.thighRR : JOINT_MAP.thighRL;
+        const calfJoint = legKey === "FL" ? JOINT_MAP.calfFL : legKey === "FR" ? JOINT_MAP.calfFR : legKey === "BR" ? JOINT_MAP.calfRR : JOINT_MAP.calfRL;
+
+        setRobotJoint(thighJoint, thighRad);
+        setRobotJoint(calfJoint, calfRad);
+      }
+
+      function solveLegIkForFrame(legKey, frameIndex, targetWorld) {
+        const frames = state.dataset.frames;
+        if (!frames || !frames.length) return;
+        if (!urdfRobot) return;
+        const i = clamp(frameIndex, 0, Math.max(0, frames.length - 1));
+        const f = frames[i];
+        if (!Array.isArray(f)) return;
+
+        const idx = getLegTuneChannelIndices(legKey);
+        let thigh = Number.isFinite(f[idx.thigh]) ? (f[idx.thigh] | 0) : 0;
+        let calf = Number.isFinite(f[idx.calf]) ? (f[idx.calf] | 0) : 0;
+
+        const iters = Math.max(1, Math.floor(Number(els.ikIters && els.ikIters.value) || 20));
+        const damping = clamp(Number(els.ikDamping && els.ikDamping.value) || 0, 0, 1);
+        const lambda = 1e-4 + damping * 8e-2;
+        const epsRad = 0.5 * DEG2RAD;
+        const tol = (0.8 / 1000) * (Number(state.sim.modelScale) || 1);
+
+        const p = new THREE.Vector3();
+        const p1 = new THREE.Vector3();
+        const p2 = new THREE.Vector3();
+        const err = new THREE.Vector3();
+
+        // 中文注释：从当前帧开始解，逐帧解时外部会把上一帧解写回 frames，所以天然会更平滑。
+        for (let k = 0; k < iters; k++) {
+          applyMotionPoseAt(i);
+          setLegAnglesDegForIk(legKey, thigh, calf, f);
+          urdfRobot.updateMatrixWorld(true);
+          getLegContactPointWorld(legKey, p, false);
+          err.copy(targetWorld).sub(p);
+          if (err.length() <= tol) break;
+
+          // 数值雅可比：两关节各扰动一点，计算足端位移
+          setLegAnglesDegForIk(legKey, thigh + 1, calf, f);
+          urdfRobot.updateMatrixWorld(true);
+          getLegContactPointWorld(legKey, p1, false);
+
+          setLegAnglesDegForIk(legKey, thigh, calf + 1, f);
+          urdfRobot.updateMatrixWorld(true);
+          getLegContactPointWorld(legKey, p2, false);
+
+          const j1 = p1.clone().sub(p).multiplyScalar(1 / DEG2RAD);
+          const j2 = p2.clone().sub(p).multiplyScalar(1 / DEG2RAD);
+
+          const a11 = j1.dot(j1) + lambda;
+          const a12 = j1.dot(j2);
+          const a22 = j2.dot(j2) + lambda;
+          const b1 = j1.dot(err);
+          const b2 = j2.dot(err);
+
+          const det = a11 * a22 - a12 * a12;
+          if (Math.abs(det) < 1e-12) break;
+
+          const d1 = (b1 * a22 - b2 * a12) / det;
+          const d2 = (b2 * a11 - b1 * a12) / det;
+
+          // 中文注释：每步限制最大变化，避免数值发散造成跳变
+          const maxStep = 6;
+          thigh = clamp(thigh + clamp(d1 / DEG2RAD, -maxStep, maxStep), -120, 120);
+          calf = clamp(calf + clamp(d2 / DEG2RAD, -maxStep, maxStep), -120, 120);
+        }
+
+        f[idx.thigh] = Math.trunc(thigh);
+        f[idx.calf] = Math.trunc(calf);
+      }
+
+      function autoApplyDraggedPath() {
+        if (!urdfRobot) return;
+        const frames = state.dataset.frames;
+        if (!frames || !frames.length) return;
+        const n = frames.length;
+        const ptsL = state.ik.rawDragPath;
+        if (!ptsL || ptsL.length < 2) return;
+
+        const legKey = state.observe.leg;
+        // 中文注释：将用户拖拽出的轨迹按帧数做等距重采样，均匀铺满整个周期
+        const sampledL = resamplePolylineByArcLength(ptsL, n);
+        const base0 = state.ik.base0Inv.clone().invert();
+
+        const idx = getLegTuneChannelIndices(legKey);
+        for (let i = 0; i < n; i++) {
+          if (i > 0) {
+            // 中文注释：使用上一帧的解作为初值，保证 IK 连续收敛，避免跳变
+            frames[i][idx.thigh] = frames[i - 1][idx.thigh];
+            frames[i][idx.calf] = frames[i - 1][idx.calf];
+          }
+          const ptW = sampledL[i].clone().applyMatrix4(base0);
+          // 中文注释：利用数值 IK，把每一帧解算出来并直接写回 frames 数组
+          solveLegIkForFrame(legKey, i, ptW);
+        }
+
+        // 中文注释：进行简单的环形平滑，消除数值抖动
+        const outT = new Array(n);
+        const outC = new Array(n);
+        for (let i = 0; i < n; i++) {
+          outT[i] = frames[i][idx.thigh];
+          outC[i] = frames[i][idx.calf];
+        }
+
+        const smoothPasses = 2;
+        for (let pass = 0; pass < smoothPasses; pass++) {
+          const t2 = new Array(n);
+          const c2 = new Array(n);
+          for (let i = 0; i < n; i++) {
+            const a = (i - 1 + n) % n;
+            const b = i;
+            const c = (i + 1) % n;
+            t2[i] = outT[a] * 0.25 + outT[b] * 0.5 + outT[c] * 0.25;
+            c2[i] = outC[a] * 0.25 + outC[b] * 0.5 + outC[c] * 0.25;
+          }
+          for (let i = 0; i < n; i++) {
+            outT[i] = t2[i];
+            outC[i] = c2[i];
+          }
+        }
+
+        for (let i = 0; i < n; i++) {
+          frames[i][idx.thigh] = Math.trunc(outT[i]);
+          frames[i][idx.calf] = Math.trunc(outC[i]);
+        }
+
+        invalidateMotionCache();
+        recomputeLegSeries();
+        updateTrajectory();
+        updateBodyTrajectoryFromCache();
+        writeDatasetBackToTextArea();
+        
+        // 中文注释：写回后把播放头重置到首帧，便于用户验证效果
+        state.playback.t = 0;
+        state.playback.frameIndex = 0;
+        state.playback.frameFloat = 0;
+        state.playback.smoothedPose = null;
+        if (els.timeline) els.timeline.value = "0";
+        updatePoseFromTimeline();
+        
+        setStatus("ok", `自动将拖拽的 ${ptsL.length} 个点轨迹映射并平滑到 ${n} 帧。`);
       }
 
       function setDatasetFromText(rawText) {
@@ -1325,12 +2408,15 @@
         setStatus("ok", `解析成功：${res.header.frameCount} 帧，${res.channelCount} 通道，interval ${res.header.intervalMs}ms ${ignored}`);
 
         state.playback.frameIndex = clamp(state.playback.frameIndex, 0, Math.max(0, res.frames.length - 1));
+        state.playback.frameFloat = state.playback.frameIndex;
         state.playback.t = state.playback.frameIndex * getFrameDurationMs();
         state.playback.smoothedPose = null;
 
         window.localStorage.setItem("gait_sim_raw", rawText);
+        invalidateMotionCache();
         recomputeLegSeries();
         updateTrajectory();
+        updateBodyTrajectoryFromCache();
         drawChart();
         updateInfoUI();
         return true;
@@ -1365,7 +2451,9 @@
           if (!state.dataset.frames.length) return;
           state.sim.isPlaying = !state.sim.isPlaying;
           els.btnPlay.textContent = state.sim.isPlaying ? "暂停" : "播放";
-          if (state.sim.isPlaying) state.playback.lastTs = 0;
+          if (state.sim.isPlaying) {
+            state.playback.lastTs = 0;
+          }
         });
         els.btnStop.addEventListener("click", () => {
           state.sim.isPlaying = false;
@@ -1373,6 +2461,9 @@
           state.playback.t = 0;
           state.playback.frameIndex = 0;
           state.playback.smoothedPose = null;
+          state.playback.frameFloat = 0;
+          state.motion.pathPts = [];
+          state.motion.pathLastAppendMs = 0;
           updatePoseFromTimeline();
         });
         els.loop.addEventListener("change", () => {
@@ -1387,6 +2478,7 @@
           state.playback.frameIndex = Number(els.timeline.value) || 0;
           state.playback.t = state.playback.frameIndex * getFrameDurationMs();
           state.playback.smoothedPose = null;
+          state.playback.frameFloat = state.playback.frameIndex;
           updatePoseFromTimeline();
         });
 
@@ -1398,6 +2490,7 @@
           state.playback.t = state.playback.frameIndex * getFrameDurationMs();
           state.playback.smoothedPose = null;
           els.timeline.value = String(state.playback.frameIndex);
+          state.playback.frameFloat = state.playback.frameIndex;
           updatePoseFromTimeline();
         });
 
@@ -1409,24 +2502,28 @@
         });
         els.ground.addEventListener("change", () => {
           state.sim.groundOffsetMm = Number(els.ground.value) || 0;
+          invalidateMotionCache();
           recomputeLegSeries();
           updateTrajectory();
           updatePoseFromTimeline();
         });
         els.roughAmp.addEventListener("change", () => {
           state.sim.roughAmpMm = Number(els.roughAmp.value) || 0;
+          invalidateMotionCache();
           recomputeLegSeries();
           updateTrajectory();
           updatePoseFromTimeline();
         });
         els.roughFreq.addEventListener("change", () => {
           state.sim.roughFreq = Number(els.roughFreq.value) || 0;
+          invalidateMotionCache();
           recomputeLegSeries();
           updateTrajectory();
           updatePoseFromTimeline();
         });
         els.roughSeed.addEventListener("change", () => {
           state.sim.roughSeed = Number(els.roughSeed.value) || 0;
+          invalidateMotionCache();
           recomputeLegSeries();
           updateTrajectory();
           updatePoseFromTimeline();
@@ -1435,8 +2532,45 @@
           state.sim.bodyMassKg = Math.max(0, Number(els.bodyMass.value) || 0);
           updateLoadUI();
         });
+        els.enableMotion.addEventListener("change", () => {
+          state.motion.enabled = !!els.enableMotion.checked;
+          invalidateMotionCache();
+          recomputeLegSeries();
+          updateTrajectory();
+          updateBodyTrajectoryFromCache();
+          updatePoseFromTimeline();
+        });
+        els.enablePose.addEventListener("change", () => {
+          state.motion.poseEnabled = !!els.enablePose.checked;
+          invalidateMotionCache();
+          recomputeLegSeries();
+          updateTrajectory();
+          updateBodyTrajectoryFromCache();
+          updatePoseFromTimeline();
+        });
+        els.poseGain.addEventListener("change", () => {
+          state.motion.poseGain = Math.max(0, Number(els.poseGain.value) || 0);
+          updatePoseFromTimeline();
+        });
+        els.showBodyTraj.addEventListener("change", () => {
+          state.motion.showBodyTrajectory = !!els.showBodyTraj.checked;
+          updateBodyTrajectoryVisibility();
+        });
+        els.continuousWalk.addEventListener("change", () => {
+          state.motion.continuousWalk = !!els.continuousWalk.checked;
+          if (state.motion.continuousWalk) {
+            state.motion.pathPts = [];
+            state.motion.pathLastAppendMs = 0;
+          }
+          invalidateMotionCache();
+          recomputeLegSeries();
+          updateTrajectory();
+          updateBodyTrajectoryFromCache();
+          updatePoseFromTimeline();
+        });
         els.applyScale.addEventListener("change", () => {
           state.sim.applyHeaderScale = !!els.applyScale.checked;
+          invalidateMotionCache();
           recomputeLegSeries();
           updateTrajectory();
           drawChart();
@@ -1444,6 +2578,7 @@
         });
         els.invertCalf.addEventListener("change", () => {
           state.sim.invertCalf = !!els.invertCalf.checked;
+          invalidateMotionCache();
           recomputeLegSeries();
           updateTrajectory();
           drawChart();
@@ -1455,10 +2590,118 @@
         });
         els.legSelect.addEventListener("change", () => {
           setSelectedLeg(String(els.legSelect.value || "BR"));
+          invalidateMotionCache();
           recomputeLegSeries();
           updateTrajectory();
           drawChart();
           updatePoseFromTimeline();
+        });
+
+        if (els.ikEnable) {
+          els.ikEnable.addEventListener("change", () => {
+            setIkEnabled(!!els.ikEnable.checked);
+          });
+        }
+        if (els.btnIkRecord) {
+          els.btnIkRecord.addEventListener("click", () => {
+            if (!state.ik.enabled) {
+              if (els.ikEnable) els.ikEnable.checked = true;
+              setIkEnabled(true);
+            }
+            if (state.ik.recording) {
+              endIkRecord();
+              els.btnIkRecord.textContent = "开始录制轨迹";
+              autoApplyDraggedPath();
+            } else {
+              beginIkRecordFromFirstFrame();
+              els.btnIkRecord.textContent = "停止录制";
+            }
+          });
+        }
+        if (els.btnIkClear) {
+          els.btnIkClear.addEventListener("click", () => {
+            clearIkPath();
+            updateIkViz();
+          });
+        }
+        if (els.btnIkApply) {
+          els.btnIkApply.addEventListener("click", () => {
+            endIkRecord();
+            if (els.btnIkRecord) els.btnIkRecord.textContent = "开始录制轨迹";
+            autoApplyDraggedPath();
+          });
+        }
+
+        if (els.btnTuneThighMinus) {
+          els.btnTuneThighMinus.addEventListener("click", () => {
+            const step = Math.max(1, Math.floor(Number(els.tuneStep && els.tuneStep.value) || 1));
+            applyQuickTune("thigh", -step);
+          });
+        }
+        if (els.btnTuneThighPlus) {
+          els.btnTuneThighPlus.addEventListener("click", () => {
+            const step = Math.max(1, Math.floor(Number(els.tuneStep && els.tuneStep.value) || 1));
+            applyQuickTune("thigh", step);
+          });
+        }
+        if (els.btnTuneCalfMinus) {
+          els.btnTuneCalfMinus.addEventListener("click", () => {
+            const step = Math.max(1, Math.floor(Number(els.tuneStep && els.tuneStep.value) || 1));
+            applyQuickTune("calf", -step);
+          });
+        }
+        if (els.btnTuneCalfPlus) {
+          els.btnTuneCalfPlus.addEventListener("click", () => {
+            const step = Math.max(1, Math.floor(Number(els.tuneStep && els.tuneStep.value) || 1));
+            applyQuickTune("calf", step);
+          });
+        }
+
+        if (els.btnSetSmoothStart) {
+          els.btnSetSmoothStart.addEventListener("click", () => {
+            const i = clamp(Math.round(Number(state.playback.frameIndex) || 0), 0, Math.max(0, state.dataset.frames.length - 1));
+            els.smoothStartFrame.value = String(i);
+          });
+        }
+        if (els.btnSetSmoothEnd) {
+          els.btnSetSmoothEnd.addEventListener("click", () => {
+            const i = clamp(Math.round(Number(state.playback.frameIndex) || 0), 0, Math.max(0, state.dataset.frames.length - 1));
+            els.smoothEndFrame.value = String(i);
+          });
+        }
+        if (els.btnRangeSmooth) {
+          els.btnRangeSmooth.addEventListener("click", () => {
+            const s = Math.max(0, Math.floor(Number(els.smoothStartFrame.value) || 0));
+            const e = Math.max(0, Math.floor(Number(els.smoothEndFrame.value) || 0));
+            const passes = clamp(Math.floor(Number(els.smoothPasses.value) || 1), 1, 20);
+            applyRangeSmooth(s, e, passes);
+          });
+        }
+
+        // 中文注释：快捷键快速调参（输入框/文本框聚焦时不触发，避免干扰编辑）。
+        document.addEventListener("keydown", (e) => {
+          const t = e.target;
+          const tag = t && t.tagName ? String(t.tagName).toLowerCase() : "";
+          if (tag === "input" || tag === "textarea" || tag === "select") return;
+          if (!state.dataset.frames.length) return;
+
+          const base = Math.max(1, Math.floor(Number(els.tuneStep && els.tuneStep.value) || 1));
+          const mult = e.shiftKey ? 5 : 1;
+          const step = base * mult;
+
+          if (e.key === "ArrowUp") {
+            applyQuickTune("calf", step);
+            e.preventDefault();
+          } else if (e.key === "ArrowDown") {
+            applyQuickTune("calf", -step);
+            e.preventDefault();
+          } else if (e.key === "ArrowRight") {
+            applyQuickTune("thigh", step);
+            e.preventDefault();
+          } else if (e.key === "ArrowLeft") {
+            applyQuickTune("thigh", -step);
+            e.preventDefault();
+          }
         });
 
         els.btnReset.addEventListener("click", () => {
@@ -1469,11 +2712,20 @@
           els.roughFreq.value = "0.25";
           els.roughSeed.value = "1";
           els.bodyMass.value = "1.7";
+          els.enableMotion.checked = false;
+          els.enablePose.checked = false;
+          els.poseGain.value = "1.0";
+          els.showBodyTraj.checked = true;
+          els.continuousWalk.checked = true;
           els.applyScale.checked = true;
           els.invertCalf.checked = true;
           els.showTraj.checked = true;
           els.speed.value = "1";
           els.loop.checked = true;
+          if (els.ikEnable) els.ikEnable.checked = false;
+          if (els.btnIkRecord) els.btnIkRecord.textContent = "开始录制轨迹";
+          if (els.ikIters) els.ikIters.value = "24";
+          if (els.ikDamping) els.ikDamping.value = "0.25";
 
           state.sim.interpolation = "linear";
           state.sim.smoothingStrength = 0.2;
@@ -1482,14 +2734,22 @@
           state.sim.roughFreq = 0.25;
           state.sim.roughSeed = 1;
           state.sim.bodyMassKg = 1.7;
+          state.motion.enabled = false;
+          state.motion.poseEnabled = false;
+          state.motion.poseGain = 1.0;
+          state.motion.showBodyTrajectory = true;
+          state.motion.continuousWalk = true;
           state.sim.applyHeaderScale = true;
           state.sim.invertCalf = true;
           state.sim.showTrajectory = true;
           state.sim.speed = 1;
           state.sim.loop = true;
+          setIkEnabled(false);
 
+          invalidateMotionCache();
           recomputeLegSeries();
           updateTrajectory();
+          updateBodyTrajectoryFromCache();
           drawChart();
           updatePoseFromTimeline();
         });
@@ -1512,10 +2772,26 @@
           updateInfoUI();
           return;
         }
-        const f = frames[clamp(state.playback.frameIndex, 0, frames.length - 1)];
+        state.playback.frameIndex = clamp(state.playback.frameIndex, 0, frames.length - 1);
+        state.playback.frameFloat = state.playback.frameIndex;
+        const f = frames[state.playback.frameIndex];
         applyPoseToModel(f);
         updateInfoUI();
         drawChart();
+      }
+
+      function updatePoseFromTimelineFast() {
+        // 中文注释：拖拽 IK 时高频刷新，避免每次都重绘曲线导致卡顿
+        const frames = state.dataset.frames;
+        if (!frames.length) {
+          updateInfoUI();
+          return;
+        }
+        state.playback.frameIndex = clamp(state.playback.frameIndex, 0, frames.length - 1);
+        state.playback.frameFloat = state.playback.frameIndex;
+        const f = frames[state.playback.frameIndex];
+        applyPoseToModel(f);
+        updateInfoUI();
       }
 
       const SERVO_TORQUE_MAX_NM = 35 * 0.0980665;
@@ -1524,7 +2800,9 @@
       function computeSupportForces() {
         const scale = Number(state.sim.modelScale) || 1;
         const massKg = Math.max(0, Number(state.sim.bodyMassKg) || 0);
-        const W = massKg * 9.80665;
+        // 中文注释：腿重量按“每条腿 = 机身重量 / 8”，四条腿合计 = 机身重量 / 2，所以总质量约为 1.5 倍机身质量
+        const totalMassKg = massKg * (1 + 4 / 8);
+        const W = totalMassKg * 9.80665;
 
         const com = new THREE.Vector3();
         if (baseLink) {
@@ -1546,7 +2824,8 @@
           const gy = groundYWorldAtWorldXZ(x, z);
           const minY = box.min.y;
           const inContact = minY <= gy + epsWorld;
-          const p = new THREE.Vector3(x, Math.max(minY, gy), z);
+          // 中文注释：支撑腿用于受力/支撑多边形计算时，接触点强制贴地
+          const p = new THREE.Vector3(x, inContact ? gy : Math.max(minY, gy), z);
           infos.push({ k, p, inContact });
         }
 
@@ -1672,7 +2951,10 @@
       let robotGroup;
       let rrFootMarker;
       let rrTrajectoryLine;
+      let bodyTrajectoryLine;
       let groundGrid;
+      let ikTargetMarker;
+      let ikPathLine;
 
       function initThree() {
         scene = new THREE.Scene();
@@ -1706,11 +2988,25 @@
         robotGroup = new THREE.Group();
         scene.add(robotGroup);
 
+        bodyTrajectoryLine = new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 0)]),
+          new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.95 })
+        );
+        bodyTrajectoryLine.visible = true;
+        scene.add(bodyTrajectoryLine);
+
         rrFootMarker = new THREE.Mesh(
           new THREE.SphereGeometry(4, 18, 18),
           new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0x3b2f00, roughness: 0.5 })
         );
         scene.add(rrFootMarker);
+
+        ikTargetMarker = new THREE.Mesh(
+          new THREE.SphereGeometry(5, 18, 18),
+          new THREE.MeshStandardMaterial({ color: 0x22c55e, emissive: 0x052914, roughness: 0.45 })
+        );
+        ikTargetMarker.visible = false;
+        scene.add(ikTargetMarker);
 
         window.addEventListener("resize", resizeThree);
         resizeThree();
@@ -1725,6 +3021,71 @@
           const y = (e.clientY - rect.top) / Math.max(1, rect.height);
           ndc.set(x * 2 - 1, -(y * 2 - 1));
           raycaster.setFromCamera(ndc, camera);
+
+          // 中文注释：IK 拖拽优先（直接拖拽“选中腿足端”或绿色目标点），避免和“点模型切腿”冲突。
+          if (state.ik && state.ik.enabled && ikTargetMarker) {
+            const legKey = state.observe.leg;
+            const footLink = legLinks[legKey];
+            const hitTarget = raycaster.intersectObject(ikTargetMarker, true);
+            const hitFootMarker = rrFootMarker ? raycaster.intersectObject(rrFootMarker, true) : [];
+            const hitFootLink = footLink ? raycaster.intersectObject(footLink, true) : [];
+            if ((hitTarget && hitTarget.length) || (hitFootMarker && hitFootMarker.length) || (hitFootLink && hitFootLink.length)) {
+              // 中文注释：开始拖拽：默认在“面向摄像机的平面”上拖动（更直观），Shift 模式再单独调高度。
+              if (state.ik.recording) state.ik.rawDragPath = [];
+              state.ik.dragging = true;
+              state.ik.dragStart = {
+                x: ikTargetMarker.position.x,
+                y: ikTargetMarker.position.y,
+                z: ikTargetMarker.position.z,
+                clientY: e.clientY,
+              };
+              if (!state.ik.dragPlane) state.ik.dragPlane = new THREE.Plane();
+              if (!state.ik.dragOffset) state.ik.dragOffset = new THREE.Vector3();
+              const nrm = new THREE.Vector3();
+              camera.getWorldDirection(nrm);
+              state.ik.dragPlane.setFromNormalAndCoplanarPoint(nrm, ikTargetMarker.position);
+              const hitPt = new THREE.Vector3();
+              if (raycaster.ray.intersectPlane(state.ik.dragPlane, hitPt)) {
+                state.ik.dragOffset.copy(ikTargetMarker.position).sub(hitPt);
+              } else {
+                state.ik.dragOffset.set(0, 0, 0);
+              }
+
+              if (controls) controls.enabled = false;
+              renderer.domElement.setPointerCapture && renderer.domElement.setPointerCapture(e.pointerId);
+              e.preventDefault();
+              return;
+            }
+
+            // 中文注释：录制模式下允许“点任意位置就开始拖拽”，避免必须精准点中球体导致录制不到轨迹点。
+            if (state.ik.recording) {
+              state.ik.rawDragPath = []; // 每次按下重新开始记录新轨迹
+              state.ik.dragging = true;
+              state.ik.dragStart = {
+                x: ikTargetMarker.position.x,
+                y: ikTargetMarker.position.y,
+                z: ikTargetMarker.position.z,
+                clientY: e.clientY,
+              };
+              if (!state.ik.dragPlane) state.ik.dragPlane = new THREE.Plane();
+              if (!state.ik.dragOffset) state.ik.dragOffset = new THREE.Vector3();
+              const nrm = new THREE.Vector3();
+              camera.getWorldDirection(nrm);
+              state.ik.dragPlane.setFromNormalAndCoplanarPoint(nrm, ikTargetMarker.position);
+              const hitPt = new THREE.Vector3();
+              if (raycaster.ray.intersectPlane(state.ik.dragPlane, hitPt)) {
+                state.ik.dragOffset.copy(ikTargetMarker.position).sub(hitPt);
+              } else {
+                state.ik.dragOffset.set(0, 0, 0);
+              }
+
+              if (controls) controls.enabled = false;
+              renderer.domElement.setPointerCapture && renderer.domElement.setPointerCapture(e.pointerId);
+              e.preventDefault();
+              return;
+            }
+          }
+
           const hits = raycaster.intersectObject(urdfRobot, true);
           if (!hits.length) return;
           let obj = hits[0].object;
@@ -1737,6 +3098,71 @@
           updateTrajectory();
           drawChart();
           updatePoseFromTimeline();
+        });
+
+        renderer.domElement.addEventListener("pointermove", (e) => {
+          if (!urdfRobot) return;
+          if (!state.ik || !state.ik.enabled || !state.ik.dragging) return;
+          const rect = renderer.domElement.getBoundingClientRect();
+          const x = (e.clientX - rect.left) / Math.max(1, rect.width);
+          const y = (e.clientY - rect.top) / Math.max(1, rect.height);
+          ndc.set(x * 2 - 1, -(y * 2 - 1));
+          raycaster.setFromCamera(ndc, camera);
+
+          const pt = new THREE.Vector3();
+          if (e.shiftKey && state.ik.dragStart) {
+            // 中文注释：按住 Shift 时，改为调“高度”(Y)，便于画抬脚轨迹；XZ 保持不变。
+            const s = Number(state.sim.modelScale) || 1;
+            const dy = state.ik.dragStart.clientY - e.clientY;
+            const yStep = (0.35 / 1000) * s; // 0.35mm/px
+            pt.set(state.ik.dragStart.x, state.ik.dragStart.y + dy * yStep, state.ik.dragStart.z);
+          } else {
+            // 中文注释：默认在“面向摄像机的平面”里拖拽，直观控制足端 3D 位置。
+            if (!state.ik.dragPlane || !state.ik.dragOffset) return;
+            const hitPt = new THREE.Vector3();
+            if (!raycaster.ray.intersectPlane(state.ik.dragPlane, hitPt)) return;
+            pt.copy(hitPt).add(state.ik.dragOffset);
+          }
+
+          // 中文注释：目标点不允许低于地面，防止生成“插地”轨迹导致 IK 发散。
+          const gy = groundYWorldAtWorldXZ(pt.x, pt.z);
+          if (pt.y < gy) pt.y = gy;
+
+          ikTargetMarker.position.copy(pt);
+
+          // 中文注释：拖拽时实时对“当前帧”做一次 IK 反解，让腿跟着手移动（更直观）。
+          solveLegIkForFrame(state.observe.leg, state.playback.frameIndex, pt);
+          updatePoseFromTimelineFast();
+
+          if (state.ik.recording && state.ik.base0Inv) {
+            const pL = pt.clone().applyMatrix4(state.ik.base0Inv);
+            if (!state.ik.rawDragPath) state.ik.rawDragPath = [];
+            // 中文注释：记录拖拽轨迹上的点，过滤掉太近的点（0.001即1毫米，避免重合点过多）
+            if (state.ik.rawDragPath.length === 0 || state.ik.rawDragPath[state.ik.rawDragPath.length - 1].distanceTo(pL) > 0.001) {
+                state.ik.rawDragPath.push(pL);
+            }
+
+            const base0 = state.ik.base0Inv.clone().invert();
+            const ptsW = state.ik.rawDragPath.map(q => q.clone().applyMatrix4(base0));
+            rebuildIkPathLine(ptsW);
+            updateIkViz();
+          }
+          e.preventDefault();
+        });
+
+        renderer.domElement.addEventListener("pointerup", (e) => {
+          if (!state.ik || !state.ik.dragging) return;
+          state.ik.dragging = false;
+          state.ik.dragStart = null;
+          if (controls) controls.enabled = true;
+          renderer.domElement.releasePointerCapture && renderer.domElement.releasePointerCapture(e.pointerId);
+          
+          // 中文注释：拖拽松开后，如果是录制状态且轨迹有效，则自动映射到所有帧
+          if (state.ik.recording && state.ik.rawDragPath && state.ik.rawDragPath.length > 2) {
+              autoApplyDraggedPath();
+          }
+
+          e.preventDefault();
         });
       }
 
@@ -1751,16 +3177,126 @@
 
       function applyPoseToModel(frame) {
         if (!urdfRobot) return;
+        rebuildMotionCacheIfNeeded();
+        applyMotionPoseAt(state.playback.frameFloat);
         setRobotPoseFromFrame(frame);
         urdfRobot.updateMatrixWorld(true);
-        getLegContactPointWorld(state.observe.leg, _tmpV3);
+
+        // 中文注释：平地也会出现走路“机身晃动”，用支撑力分布估算 roll/pitch（可反映姿态偏移趋势）。
+        if (state.motion.poseEnabled) {
+          const res = computeSupportForces();
+          const totalF = (res.forces.FL || 0) + (res.forces.FR || 0) + (res.forces.BL || 0) + (res.forces.BR || 0);
+          if (totalF > 1e-6) {
+            const leftF = (res.forces.FL || 0) + (res.forces.BL || 0);
+            const rightF = (res.forces.FR || 0) + (res.forces.BR || 0);
+            const frontF = (res.forces.FL || 0) + (res.forces.FR || 0);
+            const backF = (res.forces.BL || 0) + (res.forces.BR || 0);
+
+            // 中文注释：1) 受力不平衡导致的滚转/俯仰（更像“扛不住”导致的偏移）
+            const rollF = ((rightF - leftF) / totalF) * (22 * DEG2RAD);
+            const pitchF = ((frontF - backF) / totalF) * (14 * DEG2RAD);
+
+            // 中文注释：2) COM 相对支撑多边形中心偏移导致的滚转/俯仰（更像“走路重心摇摆”）
+            let rollC = 0;
+            let pitchC = 0;
+            if (baseLink) {
+              const com = new THREE.Vector3();
+              new THREE.Box3().setFromObject(baseLink).getCenter(com);
+              let cx = 0;
+              let cz = 0;
+              let cnt = 0;
+              for (const k of LEG_KEYS) {
+                const Fk = res.forces[k] || 0;
+                if (Fk <= 1e-6 || !res.points[k]) continue;
+                cx += res.points[k].x;
+                cz += res.points[k].z;
+                cnt += 1;
+              }
+              if (cnt > 0) {
+                cx /= cnt;
+                cz /= cnt;
+                const scale = Number(state.sim.modelScale) || 1;
+                const dxMm = ((com.x - cx) / scale) * 1000;
+                const dzMm = ((com.z - cz) / scale) * 1000;
+                rollC = (dxMm / 40) * (12 * DEG2RAD);
+                pitchC = (dzMm / 80) * (10 * DEG2RAD);
+              }
+            }
+
+            const g = Math.max(0, Number(state.motion.poseGain) || 0);
+            const rollT = clamp((rollF + rollC) * g, -16 * DEG2RAD, 16 * DEG2RAD);
+            const pitchT = clamp((pitchF + pitchC) * g, -14 * DEG2RAD, 14 * DEG2RAD);
+            const qTarget = new THREE.Quaternion().setFromEuler(new THREE.Euler(pitchT, 0, rollT, "XYZ"));
+            if (!state.motion.rockQuat) state.motion.rockQuat = new THREE.Quaternion();
+            state.motion.rockQuat.slerp(qTarget, 0.18);
+            // 中文注释：姿态修正应该在机体自身坐标系生效（转弯 yaw 后仍表现为“左右/前后”倾斜），所以使用右乘
+            urdfRobot.quaternion.multiply(state.motion.rockQuat);
+            urdfRobot.updateMatrixWorld(true);
+          }
+        } else {
+          if (state.motion.rockQuat) state.motion.rockQuat.identity();
+        }
+
+        getLegContactPointWorld(state.observe.leg, _tmpV3, false);
         rrFootMarker.position.copy(_tmpV3);
+        updateIkViz();
         groundGrid.position.y = ((Number(state.sim.groundOffsetMm) || 0) / 1000) * (Number(state.sim.modelScale) || 1);
         updateLoadUI();
       }
 
       function updateTrajectoryVisibility() {
         if (rrTrajectoryLine) rrTrajectoryLine.visible = !!state.sim.showTrajectory;
+      }
+
+      function updateBodyTrajectoryVisibility() {
+        if (bodyTrajectoryLine) bodyTrajectoryLine.visible = !!state.motion.showBodyTrajectory;
+      }
+
+      function updateBodyTrajectoryFromCache() {
+        if (!bodyTrajectoryLine) return;
+        rebuildMotionCacheIfNeeded();
+        const pts = [];
+        const arr = state.motion.cachePos || [];
+        if (!arr.length) {
+          bodyTrajectoryLine.visible = false;
+          return;
+        }
+        const maxPts = 800;
+        const step = Math.max(1, Math.floor(arr.length / maxPts));
+        for (let i = 0; i < arr.length; i += step) {
+          const p = arr[i].clone();
+          p.y = groundYWorldAtWorldXZ(p.x, p.z) + 0.2;
+          pts.push(p);
+        }
+        if (pts.length < 2) {
+          const p = arr[arr.length - 1].clone();
+          p.y = groundYWorldAtWorldXZ(p.x, p.z) + 0.2;
+          pts.push(p);
+        }
+
+        if (bodyTrajectoryLine.geometry) bodyTrajectoryLine.geometry.dispose();
+        bodyTrajectoryLine.geometry = new THREE.BufferGeometry().setFromPoints(pts);
+        updateBodyTrajectoryVisibility();
+      }
+
+      function appendBodyPathPoint(tsMs) {
+        if (!state.motion.showBodyTrajectory || !bodyTrajectoryLine || !urdfRobot) return;
+        if (!state.motion.continuousWalk) return;
+        const last = Number(state.motion.pathLastAppendMs) || 0;
+        if (tsMs - last < 100) return;
+        state.motion.pathLastAppendMs = tsMs;
+
+        const pts = state.motion.pathPts;
+        const p = urdfRobot.position.clone();
+        p.y = groundYWorldAtWorldXZ(p.x, p.z) + 0.2;
+        pts.push(p);
+        if (pts.length > 2000) pts.splice(0, pts.length - 2000);
+
+        if (pts.length >= 2) {
+          if (bodyTrajectoryLine.geometry) bodyTrajectoryLine.geometry.dispose();
+          bodyTrajectoryLine.geometry = new THREE.BufferGeometry().setFromPoints(pts);
+          updateBodyTrajectoryVisibility();
+        }
       }
 
       function updateTrajectory() {
@@ -1774,18 +3310,22 @@
         const frames = state.dataset.frames;
         if (!frames.length) return;
 
+        rebuildMotionCacheIfNeeded();
         const pts = [];
         const keep = state.playback.frameIndex;
         const legKey = state.observe.leg;
         if (!legLinks[legKey]) return;
         for (let i = 0; i < frames.length; i++) {
+          applyMotionPoseAt(i);
           setRobotPoseFromFrame(frames[i]);
           urdfRobot.updateMatrixWorld(true);
           const p = new THREE.Vector3();
-          getLegContactPointWorld(legKey, p);
+          getLegContactPointWorld(legKey, p, false);
           if (Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z)) pts.push(p);
         }
         state.playback.frameIndex = clamp(keep, 0, Math.max(0, frames.length - 1));
+        state.playback.frameFloat = state.playback.frameIndex;
+        applyMotionPoseAt(state.playback.frameIndex);
         setRobotPoseFromFrame(frames[state.playback.frameIndex]);
         urdfRobot.updateMatrixWorld(true);
 
@@ -1813,11 +3353,14 @@
           const poseRes = getPoseAt(state.playback.t);
           if (poseRes) {
             const smoothed = smoothPose(poseRes.pose);
+            state.playback.frameFloat = poseRes.frameFloat;
             applyPoseToModel(smoothed);
             state.playback.frameIndex = clamp(poseRes.frameIndex, 0, Math.max(0, state.dataset.frames.length - 1));
             els.timeline.value = String(state.playback.frameIndex);
             updateInfoUI();
             drawChart();
+            appendBodyPathPoint(ts);
+
           }
 
           if (!state.sim.loop) {
@@ -1829,7 +3372,10 @@
           }
         } else {
           const frames = state.dataset.frames;
-          if (frames.length) applyPoseToModel(frames[state.playback.frameIndex]);
+          if (frames.length) {
+            state.playback.frameFloat = state.playback.frameIndex;
+            applyPoseToModel(frames[state.playback.frameIndex]);
+          }
         }
 
         renderer.render(scene, camera);
