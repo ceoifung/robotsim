@@ -431,6 +431,46 @@
               <button class="btn" id="btnExample">填充示例</button>
             </div>
 
+            <!-- 全局关节偏置调整 -->
+            <div style="margin-top: 15px; border-top: 1px solid var(--border); padding-top: 10px;">
+              <h3 style="font-size: 14px; margin-bottom: 8px;">全局关节偏置调整</h3>
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px;">
+                <div style="display:flex; flex-direction:column;">
+                  <label style="font-size:12px; margin-bottom:4px;">FL 大腿 <span id="cum_fl_t" style="color:#f59e0b; font-weight:bold; margin-left:2px;"></span></label>
+                  <input type="number" id="offset_fl_t" value="0" style="background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:4px; border-radius:4px; font-family:monospace; width:100%; box-sizing:border-box;" placeholder="增量">
+                </div>
+                <div style="display:flex; flex-direction:column;">
+                  <label style="font-size:12px; margin-bottom:4px;">FR 大腿 <span id="cum_fr_t" style="color:#f59e0b; font-weight:bold; margin-left:2px;"></span></label>
+                  <input type="number" id="offset_fr_t" value="0" style="background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:4px; border-radius:4px; font-family:monospace; width:100%; box-sizing:border-box;" placeholder="增量">
+                </div>
+                <div style="display:flex; flex-direction:column;">
+                  <label style="font-size:12px; margin-bottom:4px;">BR 大腿 <span id="cum_br_t" style="color:#f59e0b; font-weight:bold; margin-left:2px;"></span></label>
+                  <input type="number" id="offset_br_t" value="0" style="background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:4px; border-radius:4px; font-family:monospace; width:100%; box-sizing:border-box;" placeholder="增量">
+                </div>
+                <div style="display:flex; flex-direction:column;">
+                  <label style="font-size:12px; margin-bottom:4px;">BL 大腿 <span id="cum_bl_t" style="color:#f59e0b; font-weight:bold; margin-left:2px;"></span></label>
+                  <input type="number" id="offset_bl_t" value="0" style="background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:4px; border-radius:4px; font-family:monospace; width:100%; box-sizing:border-box;" placeholder="增量">
+                </div>
+                <div style="display:flex; flex-direction:column;">
+                  <label style="font-size:12px; margin-bottom:4px;">FL 小腿 <span id="cum_fl_c" style="color:#f59e0b; font-weight:bold; margin-left:2px;"></span></label>
+                  <input type="number" id="offset_fl_c" value="0" style="background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:4px; border-radius:4px; font-family:monospace; width:100%; box-sizing:border-box;" placeholder="增量">
+                </div>
+                <div style="display:flex; flex-direction:column;">
+                  <label style="font-size:12px; margin-bottom:4px;">FR 小腿 <span id="cum_fr_c" style="color:#f59e0b; font-weight:bold; margin-left:2px;"></span></label>
+                  <input type="number" id="offset_fr_c" value="0" style="background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:4px; border-radius:4px; font-family:monospace; width:100%; box-sizing:border-box;" placeholder="增量">
+                </div>
+                <div style="display:flex; flex-direction:column;">
+                  <label style="font-size:12px; margin-bottom:4px;">BR 小腿 <span id="cum_br_c" style="color:#f59e0b; font-weight:bold; margin-left:2px;"></span></label>
+                  <input type="number" id="offset_br_c" value="0" style="background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:4px; border-radius:4px; font-family:monospace; width:100%; box-sizing:border-box;" placeholder="增量">
+                </div>
+                <div style="display:flex; flex-direction:column;">
+                  <label style="font-size:12px; margin-bottom:4px;">BL 小腿 <span id="cum_bl_c" style="color:#f59e0b; font-weight:bold; margin-left:2px;"></span></label>
+                  <input type="number" id="offset_bl_c" value="0" style="background:var(--panel2); border:1px solid var(--border); color:var(--text); padding:4px; border-radius:4px; font-family:monospace; width:100%; box-sizing:border-box;" placeholder="增量">
+                </div>
+              </div>
+              <button class="btn" id="btnApplyGlobalOffsets">应用偏置并写回</button>
+            </div>
+
             <div id="parseError" style="margin-top: 10px; display: none"></div>
 
             <div class="grid2" style="margin-top: 10px">
@@ -990,6 +1030,10 @@
           channelCount: 10,
           frames: [],
           parseError: "",
+          globalOffsets: {
+            fl_t: 0, fr_t: 0, br_t: 0, bl_t: 0,
+            fl_c: 0, fr_c: 0, br_c: 0, bl_c: 0
+          }
         },
         sim: {
           isPlaying: false,
@@ -2131,6 +2175,89 @@
         window.localStorage.setItem("gait_sim_raw", out);
       }
 
+      function updateCumulativeUI() {
+        const o = state.dataset.globalOffsets;
+        const keys = ["fl_t", "fr_t", "br_t", "bl_t", "fl_c", "fr_c", "br_c", "bl_c"];
+        keys.forEach(k => {
+          const el = document.getElementById("cum_" + k);
+          if (el) {
+            if (o[k] !== 0) {
+              el.textContent = `(累计: ${o[k] > 0 ? '+' : ''}${o[k]})`;
+            } else {
+              el.textContent = "";
+            }
+          }
+        });
+      }
+
+      function applyGlobalOffsets() {
+        const frames = state.dataset.frames;
+        if (!frames || !frames.length) return;
+        const chCount = Number(state.dataset.channelCount) || 10;
+        if (chCount < 10) {
+          alert("当前通道数小于 10，无法应用全局独立偏置。");
+          return;
+        }
+
+        const fl_t = Number(document.getElementById("offset_fl_t").value) || 0;
+        const fr_t = Number(document.getElementById("offset_fr_t").value) || 0;
+        const br_t = Number(document.getElementById("offset_br_t").value) || 0;
+        const bl_t = Number(document.getElementById("offset_bl_t").value) || 0;
+        
+        const fl_c = Number(document.getElementById("offset_fl_c").value) || 0;
+        const fr_c = Number(document.getElementById("offset_fr_c").value) || 0;
+        const br_c = Number(document.getElementById("offset_br_c").value) || 0;
+        const bl_c = Number(document.getElementById("offset_bl_c").value) || 0;
+
+        if (fl_t === 0 && fr_t === 0 && br_t === 0 && bl_t === 0 &&
+            fl_c === 0 && fr_c === 0 && br_c === 0 && bl_c === 0) {
+          return;
+        }
+
+        state.dataset.globalOffsets.fl_t += fl_t;
+        state.dataset.globalOffsets.fr_t += fr_t;
+        state.dataset.globalOffsets.br_t += br_t;
+        state.dataset.globalOffsets.bl_t += bl_t;
+        state.dataset.globalOffsets.fl_c += fl_c;
+        state.dataset.globalOffsets.fr_c += fr_c;
+        state.dataset.globalOffsets.br_c += br_c;
+        state.dataset.globalOffsets.bl_c += bl_c;
+
+        for (let i = 0; i < frames.length; i++) {
+          const f = frames[i];
+          if (!Array.isArray(f)) continue;
+          f[2] = (Number.isFinite(f[2]) ? (f[2] | 0) : 0) + fl_t;
+          f[3] = (Number.isFinite(f[3]) ? (f[3] | 0) : 0) + fr_t;
+          f[4] = (Number.isFinite(f[4]) ? (f[4] | 0) : 0) + br_t;
+          f[5] = (Number.isFinite(f[5]) ? (f[5] | 0) : 0) + bl_t;
+          f[6] = (Number.isFinite(f[6]) ? (f[6] | 0) : 0) + fl_c;
+          f[7] = (Number.isFinite(f[7]) ? (f[7] | 0) : 0) + fr_c;
+          f[8] = (Number.isFinite(f[8]) ? (f[8] | 0) : 0) + br_c;
+          f[9] = (Number.isFinite(f[9]) ? (f[9] | 0) : 0) + bl_c;
+        }
+
+        document.getElementById("offset_fl_t").value = 0;
+        document.getElementById("offset_fr_t").value = 0;
+        document.getElementById("offset_br_t").value = 0;
+        document.getElementById("offset_bl_t").value = 0;
+        document.getElementById("offset_fl_c").value = 0;
+        document.getElementById("offset_fr_c").value = 0;
+        document.getElementById("offset_br_c").value = 0;
+        document.getElementById("offset_bl_c").value = 0;
+
+        updateCumulativeUI();
+        invalidateMotionCache();
+        recomputeLegSeries();
+        updateTrajectory();
+        updateBodyTrajectoryFromCache();
+        updatePoseFromTimeline();
+        drawChart();
+        updateInfoUI();
+        writeDatasetBackToTextArea();
+        
+        setStatus("ok", "全局独立偏置已应用并写回文本");
+      }
+
       function applyQuickTune(part, delta) {
         const frames = state.dataset.frames;
         if (!frames || !frames.length) return;
@@ -2728,6 +2855,13 @@
         state.dataset.channelCount = res.channelCount;
         state.dataset.frames = res.frames;
         state.dataset.parseError = "";
+        
+        state.dataset.globalOffsets = {
+          fl_t: 0, fr_t: 0, br_t: 0, bl_t: 0,
+          fl_c: 0, fr_c: 0, br_c: 0, bl_c: 0
+        };
+        updateCumulativeUI();
+
         setParseError("");
         const ignored = Number(res.header.headerStart) > 0 ? `（已忽略前导 ${res.header.headerStart} 个数值）` : "";
         setStatus("ok", `解析成功：${res.header.frameCount} 帧，${res.channelCount} 通道，interval ${res.header.intervalMs}ms ${ignored}`);
@@ -2756,6 +2890,13 @@
         const saved = window.localStorage.getItem("gait_sim_raw");
         els.dataInput.value = saved || EXAMPLE_TEXT;
         state.sim.loop = true;
+
+        const btnApplyGlobalOffsets = document.getElementById("btnApplyGlobalOffsets");
+        if (btnApplyGlobalOffsets) {
+          btnApplyGlobalOffsets.addEventListener("click", () => {
+            applyGlobalOffsets();
+          });
+        }
 
         els.btnExample.addEventListener("click", () => {
           els.dataInput.value = EXAMPLE_TEXT;
