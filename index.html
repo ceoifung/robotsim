@@ -558,6 +558,19 @@
                 <div class="row" style="margin-top: 10px">
                   <button class="btn primary" id="btnRangeSmooth" style="width: 100%">执行平滑</button>
                 </div>
+
+                <div class="hr" style="margin: 12px 0; opacity: 0.25"></div>
+
+                <div class="help" style="margin-bottom: 10px">
+                  中文注释：输入“抬腿高度(mm)”，程序会在起始帧~结束帧区间内自动生成抬脚高度曲线，并用 IK 反解写回该腿的大腿/小腿角度（区间外不动）。
+                </div>
+                <div class="field" style="margin-top: 8px; border-bottom: none;">
+                  <label for="ikLiftMm">抬腿高度（mm）</label>
+                  <input id="ikLiftMm" type="number" min="-60" max="60" step="1" value="10" />
+                </div>
+                <div class="row" style="margin-top: 10px">
+                  <button class="btn primary" id="btnIkLiftRange" style="width: 100%">区间 IK 抬腿并写回</button>
+                </div>
               </div>
             </div>
 
@@ -635,8 +648,68 @@
                 </div>
 
                 <div class="help" style="margin-top: 10px">
-                  中文注释：开启后，可直接在视窗里拖拽<b>选中腿的足端点（橙色球）</b>或<b>绿色目标点</b>来移动腿；按住 Shift 拖动可调高度（抬脚）。完成后点“生成并写回数组”，会用逆运动学生成为该腿的大腿/小腿关键帧，避免单帧改动造成抖动。
+                  中文注释：开启后，可直接在视窗里拖拽<b>选中腿的足端点（橙色球）</b>或<b>绿色目标点</b>来移动腿；按住 Shift 拖动可调高度（抬脚）。<br />
+                  中文注释：单帧调试：先在右侧<b>曲线点击定位某一帧</b>，再拖拽足端/目标点；<b>松开鼠标后会自动把该帧的大腿/小腿角度写回数组</b>（用于修某一帧的落脚点/离地高度）。<br />
+                  中文注释：轨迹模式：点“开始录制轨迹”，拖拽画出完整抬脚轨迹，松开鼠标后会自动映射到全周期并平滑写回。
                 </div>
+
+                <div class="hr" style="margin: 12px 0; opacity: 0.25"></div>
+
+                <div class="help" style="margin-bottom: 10px">
+                  中文注释：曲线复制/粘贴：把一条腿的（大腿/小腿）角度序列导出成文本，再粘贴到另一条腿上（支持区间）。
+                </div>
+                <div class="grid2">
+                  <div class="field" style="border-bottom: none;">
+                    <label for="copySrcLeg">源腿</label>
+                    <select id="copySrcLeg">
+                      <option value="BR" selected>右后（BR）</option>
+                      <option value="BL">左后（BL）</option>
+                      <option value="FR">右前（FR）</option>
+                      <option value="FL">左前（FL）</option>
+                    </select>
+                  </div>
+                  <div class="field" style="border-bottom: none;">
+                    <label for="copyDstLeg">目标腿</label>
+                    <select id="copyDstLeg">
+                      <option value="BR">右后（BR）</option>
+                      <option value="BL">左后（BL）</option>
+                      <option value="FR">右前（FR）</option>
+                      <option value="FL" selected>左前（FL）</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="field" style="margin-top: 8px">
+                  <label for="copyChannels">通道</label>
+                  <select id="copyChannels">
+                    <option value="both" selected>大腿+小腿</option>
+                    <option value="thigh">仅大腿</option>
+                    <option value="calf">仅小腿</option>
+                  </select>
+                </div>
+                <div class="field" style="margin-top: 8px">
+                  <label for="copyNegateMode">取反</label>
+                  <select id="copyNegateMode">
+                    <option value="none" selected>不取反</option>
+                    <option value="thigh">仅大腿取反</option>
+                    <option value="calf">仅小腿取反</option>
+                    <option value="both">大腿+小腿取反</option>
+                  </select>
+                </div>
+                <div class="grid2" style="margin-top: 8px">
+                  <div class="field" style="border-bottom: none;">
+                    <label for="copyPhaseShift">相位偏移（帧）</label>
+                    <input id="copyPhaseShift" type="number" step="1" value="0" />
+                  </div>
+                  <div class="field" style="border-bottom: none;">
+                    <label for="copyBlendFrames">边界过渡（帧）</label>
+                    <input id="copyBlendFrames" type="number" min="0" step="1" value="2" />
+                  </div>
+                </div>
+                <div class="row" style="margin-top: 10px">
+                  <button class="btn" id="btnCopyCurve" style="flex: 1">生成曲线文本</button>
+                  <button class="btn primary" id="btnPasteCurve" style="flex: 1">粘贴到目标腿</button>
+                </div>
+                <textarea id="copyCurveText" style="min-height: 120px; margin-top: 10px" placeholder="格式：每行 thigh, calf（可只填一个数）；可用逗号/空格分隔。"></textarea>
               </div>
             </div>
 
@@ -896,6 +969,17 @@
         btnSetSmoothEnd: document.getElementById("btnSetSmoothEnd"),
         smoothPasses: document.getElementById("smoothPasses"),
         btnRangeSmooth: document.getElementById("btnRangeSmooth"),
+        ikLiftMm: document.getElementById("ikLiftMm"),
+        btnIkLiftRange: document.getElementById("btnIkLiftRange"),
+        copySrcLeg: document.getElementById("copySrcLeg"),
+        copyDstLeg: document.getElementById("copyDstLeg"),
+        copyChannels: document.getElementById("copyChannels"),
+        copyNegateMode: document.getElementById("copyNegateMode"),
+        copyPhaseShift: document.getElementById("copyPhaseShift"),
+        copyBlendFrames: document.getElementById("copyBlendFrames"),
+        btnCopyCurve: document.getElementById("btnCopyCurve"),
+        btnPasteCurve: document.getElementById("btnPasteCurve"),
+        copyCurveText: document.getElementById("copyCurveText"),
         btnHelp: document.getElementById("btnHelp"),
       };
 
@@ -2115,6 +2199,227 @@
         writeDatasetBackToTextArea();
       }
 
+      function applyIkLiftRange(legKey, start, end, liftMm) {
+        const frames = state.dataset.frames;
+        if (!frames || !frames.length) return;
+        if (!urdfRobot) return;
+        const n = frames.length;
+        let s = clamp(Math.min(start, end), 0, n - 1);
+        let e = clamp(Math.max(start, end), 0, n - 1);
+        if (s >= e) {
+          alert("起始帧必须小于结束帧，且区间长度至少为 2 帧");
+          return;
+        }
+
+        const scale = Number(state.sim.modelScale) || 1;
+        // 中文注释：把 mm 换成 world 单位（米），并按模型缩放同步放大/缩小
+        const liftW = (Number(liftMm) || 0) / 1000 * scale;
+        const idx = getLegTuneChannelIndices(legKey);
+        const p = new THREE.Vector3();
+
+        // 中文注释：在区间内生成“抬脚高度曲线”，默认用 sin(πu) 形成两端为 0、中间最高的平滑抬脚轨迹
+        for (let i = s; i <= e; i++) {
+          const u = (i - s) / Math.max(1, e - s);
+          const h = Math.sin(Math.PI * u) * liftW;
+
+          // 中文注释：先取该帧原始足端位置作为基准，再只在世界 Y 方向抬高
+          applyMotionPoseAt(i);
+          setRobotPoseFromFrame(frames[i] || []);
+          urdfRobot.updateMatrixWorld(true);
+          getLegContactPointWorld(legKey, p, false);
+
+          const target = p.clone();
+          target.y += h;
+
+          // 中文注释：目标点不允许低于地面，避免 IK 解出“插地”姿态
+          const gy = groundYWorldAtWorldXZ(target.x, target.z);
+          if (target.y < gy) target.y = gy;
+
+          // 中文注释：让区间内解算具备连续性：用上一帧作为初值，减少跳变
+          if (i > s) {
+            frames[i][idx.thigh] = frames[i - 1][idx.thigh];
+            frames[i][idx.calf] = frames[i - 1][idx.calf];
+          }
+
+          solveLegIkForFrame(legKey, i, target);
+        }
+
+        // 中文注释：对区间内的两列做一次轻量平滑，进一步压掉数值 IK 的抖动
+        const smoothPasses = 2;
+        for (let pass = 0; pass < smoothPasses; pass++) {
+          const oldT = new Array(e - s + 1);
+          const oldC = new Array(e - s + 1);
+          for (let i = s; i <= e; i++) {
+            oldT[i - s] = frames[i][idx.thigh];
+            oldC[i - s] = frames[i][idx.calf];
+          }
+          for (let i = s; i <= e; i++) {
+            const k = i - s;
+            const tPrev = k > 0 ? oldT[k - 1] : oldT[k];
+            const tCur = oldT[k];
+            const tNext = k < oldT.length - 1 ? oldT[k + 1] : oldT[k];
+            const cPrev = k > 0 ? oldC[k - 1] : oldC[k];
+            const cCur = oldC[k];
+            const cNext = k < oldC.length - 1 ? oldC[k + 1] : oldC[k];
+            frames[i][idx.thigh] = Math.trunc(tPrev * 0.25 + tCur * 0.5 + tNext * 0.25);
+            frames[i][idx.calf] = Math.trunc(cPrev * 0.25 + cCur * 0.5 + cNext * 0.25);
+          }
+        }
+
+        invalidateMotionCache();
+        recomputeLegSeries();
+        updateTrajectory();
+        updateBodyTrajectoryFromCache();
+        writeDatasetBackToTextArea();
+
+        state.sim.isPlaying = false;
+        if (els.btnPlay) els.btnPlay.textContent = "播放";
+        state.playback.frameIndex = clamp(state.playback.frameIndex, 0, n - 1);
+        if (els.timeline) els.timeline.value = String(state.playback.frameIndex);
+        updatePoseFromTimeline();
+
+        setStatus("ok", `区间 IK 抬腿写回：${legKey} @ [${s}, ${e}]，抬腿高度=${Number(liftMm) || 0}mm`);
+      }
+
+      function exportLegCurveText(legKey, start, end, mode) {
+        const frames = state.dataset.frames;
+        if (!frames || !frames.length) return "";
+        const n = frames.length;
+        const s = clamp(Math.min(start, end), 0, n - 1);
+        const e = clamp(Math.max(start, end), 0, n - 1);
+        const idx = getLegTuneChannelIndices(legKey);
+        const m = mode || "both";
+
+        const lines = [];
+        lines.push(`# leg=${legKey}, start=${s}, end=${e}, mode=${m}`);
+        for (let i = s; i <= e; i++) {
+          const f = frames[i] || [];
+          const t = Number.isFinite(f[idx.thigh]) ? (f[idx.thigh] | 0) : 0;
+          const c = Number.isFinite(f[idx.calf]) ? (f[idx.calf] | 0) : 0;
+          if (m === "thigh") lines.push(String(t));
+          else if (m === "calf") lines.push(String(c));
+          else lines.push(`${t}, ${c}`);
+        }
+        return lines.join("\n");
+      }
+
+      function parseCurvePairsFromText(text, mode) {
+        const m = mode || "both";
+        const out = [];
+        const lines = String(text || "")
+          .split(/\r?\n/)
+          .map((s) => s.trim())
+          .filter((s) => s && !s.startsWith("#"));
+
+        for (const line of lines) {
+          const nums = line.match(/-?\d+(\.\d+)?/g);
+          if (!nums || !nums.length) continue;
+          if (m === "thigh" || m === "calf") {
+            const v = Math.trunc(Number(nums[0]));
+            if (Number.isFinite(v)) out.push([v, null]);
+          } else {
+            const a = Math.trunc(Number(nums[0]));
+            const b = nums.length > 1 ? Math.trunc(Number(nums[1])) : null;
+            if (Number.isFinite(a)) out.push([a, Number.isFinite(b) ? b : null]);
+          }
+        }
+        return out;
+      }
+
+      function rotatePairs(pairs, shift) {
+        const n = pairs.length;
+        if (n <= 1) return pairs.slice();
+        let sh = Math.trunc(Number(shift) || 0);
+        sh = ((sh % n) + n) % n;
+        if (!sh) return pairs.slice();
+        const out = new Array(n);
+        for (let i = 0; i < n; i++) {
+          out[i] = pairs[(i - sh + n) % n];
+        }
+        return out;
+      }
+
+      function pasteLegCurveFromText(dstLegKey, start, end, mode, negateMode, phaseShiftFrames, blendFrames, text) {
+        const frames = state.dataset.frames;
+        if (!frames || !frames.length) return;
+        const n = frames.length;
+        const s = clamp(Math.min(start, end), 0, n - 1);
+        const e = clamp(Math.max(start, end), 0, n - 1);
+        if (s > e) return;
+        const need = e - s + 1;
+        const pairs0 = parseCurvePairsFromText(text, mode);
+        if (pairs0.length !== need) {
+          alert(`曲线长度不匹配：区间需要 ${need} 行数据，但解析到 ${pairs0.length} 行。请检查起止帧或粘贴内容。`);
+          return;
+        }
+        const pairs = rotatePairs(pairs0, phaseShiftFrames);
+
+        const idx = getLegTuneChannelIndices(dstLegKey);
+        const m = mode || "both";
+        const nm = String(negateMode || "none");
+        const kT = nm === "thigh" || nm === "both" ? -1 : 1;
+        const kC = nm === "calf" || nm === "both" ? -1 : 1;
+
+        const origT = new Array(need);
+        const origC = new Array(need);
+        for (let i = 0; i < need; i++) {
+          const f = frames[s + i] || [];
+          origT[i] = Number.isFinite(f[idx.thigh]) ? (f[idx.thigh] | 0) : 0;
+          origC[i] = Number.isFinite(f[idx.calf]) ? (f[idx.calf] | 0) : 0;
+        }
+
+        for (let i = 0; i < need; i++) {
+          const f = frames[s + i];
+          if (!Array.isArray(f)) continue;
+          const a = pairs[i][0];
+          const b = pairs[i][1];
+          if (m === "thigh") f[idx.thigh] = Math.trunc(a * kT);
+          else if (m === "calf") f[idx.calf] = Math.trunc(a * kC);
+          else {
+            f[idx.thigh] = Math.trunc(a * kT);
+            if (b != null) f[idx.calf] = Math.trunc(b * kC);
+          }
+        }
+
+        // 中文注释：边界过渡，避免区间外保持原值导致“断点跳变”
+        const w0 = Math.max(0, Math.floor(Number(blendFrames) || 0));
+        const w = Math.min(w0, Math.floor((need - 1) / 2));
+        if (w > 0) {
+          for (let k = 0; k < w; k++) {
+            const t = (k + 1) / (w + 1);
+            const fA = frames[s + k];
+            const fB = frames[e - k];
+            if (Array.isArray(fA)) {
+              const newT = Number.isFinite(fA[idx.thigh]) ? (fA[idx.thigh] | 0) : 0;
+              const newC = Number.isFinite(fA[idx.calf]) ? (fA[idx.calf] | 0) : 0;
+              fA[idx.thigh] = Math.trunc(origT[k] * (1 - t) + newT * t);
+              fA[idx.calf] = Math.trunc(origC[k] * (1 - t) + newC * t);
+            }
+            if (Array.isArray(fB)) {
+              const kk = need - 1 - k;
+              const t2 = (k + 1) / (w + 1);
+              const newT2 = Number.isFinite(fB[idx.thigh]) ? (fB[idx.thigh] | 0) : 0;
+              const newC2 = Number.isFinite(fB[idx.calf]) ? (fB[idx.calf] | 0) : 0;
+              fB[idx.thigh] = Math.trunc(origT[kk] * (1 - t2) + newT2 * t2);
+              fB[idx.calf] = Math.trunc(origC[kk] * (1 - t2) + newC2 * t2);
+            }
+          }
+        }
+
+        // 中文注释：写回后刷新缓存/曲线/轨迹/文本，保证用户能立刻看到变化
+        invalidateMotionCache();
+        recomputeLegSeries();
+        updateTrajectory();
+        updateBodyTrajectoryFromCache();
+        writeDatasetBackToTextArea();
+        updatePoseFromTimeline();
+
+        const nmShow = nm === "none" ? "" : `, 取反=${nm}`;
+        const shShow = Number(phaseShiftFrames) ? `, 相位=${Math.trunc(Number(phaseShiftFrames) || 0)}帧` : "";
+        const bShow = w0 ? `, 过渡=${w0}帧` : "";
+        setStatus("ok", `曲线粘贴完成：${dstLegKey} @ [${s}, ${e}]（mode=${m}${nmShow}${shShow}${bShow}）`);
+      }
+
       function rebuildIkPathLine(pointsWorld) {
         if (!scene) return;
         if (!state.ik) return;
@@ -2315,6 +2620,26 @@
 
         f[idx.thigh] = Math.trunc(thigh);
         f[idx.calf] = Math.trunc(calf);
+      }
+
+      function commitSingleFrameIkEdit(legKey, frameIndex) {
+        const frames = state.dataset.frames;
+        if (!frames || !frames.length) return;
+        const i = clamp(frameIndex, 0, Math.max(0, frames.length - 1));
+        const idx = getLegTuneChannelIndices(legKey);
+        const thigh = frames[i] && Number.isFinite(frames[i][idx.thigh]) ? (frames[i][idx.thigh] | 0) : 0;
+        const calf = frames[i] && Number.isFinite(frames[i][idx.calf]) ? (frames[i][idx.calf] | 0) : 0;
+
+        // 中文注释：单帧写回需要刷新缓存/曲线/轨迹，并写回左侧数组文本，做到“拖拽松开->立刻生效”。
+        invalidateMotionCache();
+        recomputeLegSeries();
+        updateTrajectory();
+        updateBodyTrajectoryFromCache();
+        drawChart();
+        updateInfoUI();
+        writeDatasetBackToTextArea();
+
+        setStatus("ok", `IK 单帧写回：${legKey} @ 帧 ${i}（thigh=${thigh}°, calf=${calf}°）`);
       }
 
       function autoApplyDraggedPath() {
@@ -2677,6 +3002,42 @@
             applyRangeSmooth(s, e, passes);
           });
         }
+        if (els.btnIkLiftRange) {
+          els.btnIkLiftRange.addEventListener("click", () => {
+            const s = Math.max(0, Math.floor(Number(els.smoothStartFrame.value) || 0));
+            const e = Math.max(0, Math.floor(Number(els.smoothEndFrame.value) || 0));
+            const liftMm = Number(els.ikLiftMm && els.ikLiftMm.value) || 0;
+            if (!state.ik.enabled) {
+              if (els.ikEnable) els.ikEnable.checked = true;
+              setIkEnabled(true);
+            }
+            applyIkLiftRange(state.observe.leg, s, e, liftMm);
+          });
+        }
+        if (els.btnCopyCurve) {
+          els.btnCopyCurve.addEventListener("click", () => {
+            const s = Math.max(0, Math.floor(Number(els.smoothStartFrame.value) || 0));
+            const e = Math.max(0, Math.floor(Number(els.smoothEndFrame.value) || 0));
+            const src = String((els.copySrcLeg && els.copySrcLeg.value) || state.observe.leg || "BR");
+            const mode = String((els.copyChannels && els.copyChannels.value) || "both");
+            const text = exportLegCurveText(src, s, e, mode);
+            if (els.copyCurveText) els.copyCurveText.value = text;
+            setStatus("ok", `已生成曲线文本：${src} @ [${Math.min(s, e)}, ${Math.max(s, e)}]（${mode}）`);
+          });
+        }
+        if (els.btnPasteCurve) {
+          els.btnPasteCurve.addEventListener("click", () => {
+            const s = Math.max(0, Math.floor(Number(els.smoothStartFrame.value) || 0));
+            const e = Math.max(0, Math.floor(Number(els.smoothEndFrame.value) || 0));
+            const dst = String((els.copyDstLeg && els.copyDstLeg.value) || "FL");
+            const mode = String((els.copyChannels && els.copyChannels.value) || "both");
+            const negMode = String((els.copyNegateMode && els.copyNegateMode.value) || "none");
+            const shift = Math.trunc(Number(els.copyPhaseShift && els.copyPhaseShift.value) || 0);
+            const blend = Math.max(0, Math.floor(Number(els.copyBlendFrames && els.copyBlendFrames.value) || 0));
+            const text = String((els.copyCurveText && els.copyCurveText.value) || "");
+            pasteLegCurveFromText(dst, s, e, mode, negMode, shift, blend, text);
+          });
+        }
 
         // 中文注释：快捷键快速调参（输入框/文本框聚焦时不触发，避免干扰编辑）。
         document.addEventListener("keydown", (e) => {
@@ -2778,6 +3139,7 @@
         applyPoseToModel(f);
         updateInfoUI();
         drawChart();
+        updateIkViz();
       }
 
       function updatePoseFromTimelineFast() {
@@ -2792,6 +3154,7 @@
         const f = frames[state.playback.frameIndex];
         applyPoseToModel(f);
         updateInfoUI();
+        updateIkViz();
       }
 
       const SERVO_TORQUE_MAX_NM = 35 * 0.0980665;
@@ -3160,6 +3523,9 @@
           // 中文注释：拖拽松开后，如果是录制状态且轨迹有效，则自动映射到所有帧
           if (state.ik.recording && state.ik.rawDragPath && state.ik.rawDragPath.length > 2) {
               autoApplyDraggedPath();
+          } else if (state.ik.enabled) {
+              // 中文注释：非录制模式下，拖拽用于“单帧修正”，松开即把当前帧的 IK 解写回数组文本。
+              commitSingleFrameIkEdit(state.observe.leg, state.playback.frameIndex);
           }
 
           e.preventDefault();
