@@ -310,6 +310,10 @@
       .field:last-child {
         border-bottom: none;
       }
+      .field.stack {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
       .field label {
         font-size: 12px;
         color: var(--muted);
@@ -421,7 +425,9 @@
             <div class="help" style="margin-bottom: 10px">
               <b>支持格式：</b>直接 CSV、或类似 `const int8_t xxx[] PROGMEM = { ... }`。
               <br />
-              <b>字段约定：</b>帧头 `frameCount, 0, 0, scale, 0, intervalMs`；每帧 10 个舵机角度（°）。
+              <b>步态格式：</b>帧头 `frameCount, 0, 0, scale, 0, intervalMs`；每帧 10 个舵机角度（°）。
+              <br />
+              <b>技能格式：</b>帧头 `period, expectedRoll, expectedPitch, angleDataRatio, loopStart, loopEnd, loopCount`；每帧 14 个字段。
             </div>
             <textarea id="dataInput" spellcheck="false"></textarea>
 
@@ -429,6 +435,20 @@
               <button class="btn primary" id="btnParse">解析</button>
               <button class="btn" id="btnClear">清空</button>
               <button class="btn" id="btnExample">填充示例</button>
+              <button class="btn" id="btnExampleSkill">填充技能示例</button>
+              <button class="btn" id="btnRestoreLast" title="手动恢复上一次自动保存的数组文本">恢复上次</button>
+              <div style="width: 1px; height: 20px; background: var(--border); margin: 0 5px;"></div>
+              <label class="field" style="display:flex; align-items:center; gap:8px; padding:6px 10px; border:1px solid var(--border); border-radius:10px; margin:0;">
+                <span style="font-size:12px; color:var(--muted);">数组类型</span>
+                <select id="dataMode" style="min-width:96px;">
+                  <option value="auto" selected>自动识别</option>
+                  <option value="gait">步态</option>
+                  <option value="skill">技能</option>
+                </select>
+              </label>
+              <button class="btn" id="btnReverseFrames" title="将当前数组的帧顺序颠倒，常用于后退变前进">时间轴逆序</button>
+              <button class="btn" id="btnMirrorFrames" title="将左右腿参数互换、头偏航取反，常用于左转变右转">左右镜像</button>
+              <button class="btn primary" id="btnGenerateFrontLeftLimp" title="基于当前前两帧，锁住左前腿姿态并让其余三条腿生成步态">生成左前瘸腿步态</button>
             </div>
 
             <!-- 全局关节偏置调整 -->
@@ -610,6 +630,70 @@
                 </div>
                 <div class="row" style="margin-top: 10px">
                   <button class="btn primary" id="btnIkLiftRange" style="width: 100%">区间 IK 抬腿并写回</button>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top: 12px" class="panel" aria-label="优美步态生成">
+              <div class="panel-hd">
+                <h2>优美步态生成</h2>
+              </div>
+              <div class="panel-bd">
+                <div class="help" style="margin-bottom: 10px">
+                  中文注释：以<b>当前数组首帧</b>为中性站姿，按“连续足端轨迹 -> IK 反解 -> 环形平滑”的方式，自动生成一整周期更顺、更柔和的慢速小步前进数组。
+                </div>
+
+                <div class="grid2">
+                  <div class="field stack">
+                    <label for="elegantFrameCount">帧数</label>
+                    <input id="elegantFrameCount" type="number" min="12" max="96" step="1" value="40" />
+                  </div>
+                  <div class="field stack">
+                    <label for="elegantIntervalMs">间隔（ms）</label>
+                    <input id="elegantIntervalMs" type="number" min="10" max="200" step="1" value="54" />
+                  </div>
+                </div>
+
+                <div class="grid2" style="margin-top: 8px">
+                  <div class="field stack">
+                    <label for="elegantStepMm">步长（mm）</label>
+                    <input id="elegantStepMm" type="number" min="2" max="80" step="1" value="18" />
+                  </div>
+                  <div class="field stack">
+                    <label for="elegantLiftMm">抬腿高度（mm）</label>
+                    <input id="elegantLiftMm" type="number" min="1" max="60" step="1" value="14" />
+                  </div>
+                </div>
+
+                <div class="grid2" style="margin-top: 8px">
+                  <div class="field stack">
+                    <label for="elegantDutyFactor">支撑占比（0~1）</label>
+                    <input id="elegantDutyFactor" type="number" min="0.5" max="0.9" step="0.01" value="0.72" />
+                  </div>
+                  <div class="field stack">
+                    <label for="elegantLandingSoftness">落地软化（0~1）</label>
+                    <input id="elegantLandingSoftness" type="number" min="0" max="1" step="0.05" value="0.7" />
+                  </div>
+                </div>
+
+                <div class="grid2" style="margin-top: 8px">
+                  <div class="field stack">
+                    <label for="elegantSwingSkew">摆动前送偏置（-0.3~0.3）</label>
+                    <input id="elegantSwingSkew" type="number" min="-0.3" max="0.3" step="0.01" value="-0.04" />
+                  </div>
+                  <div class="field stack">
+                    <label for="elegantSmoothPasses">环形平滑次数</label>
+                    <input id="elegantSmoothPasses" type="number" min="0" max="8" step="1" value="2" />
+                  </div>
+                </div>
+
+                <div class="help" style="margin-top: 10px">
+                  中文注释：推荐先只调 <b>步长 / 抬腿高度 / 落地软化</b> 三项；如果落脚点偏前容易“打地”，再把“摆动前送偏置”调得更负一点。
+                </div>
+
+                <div class="row" style="margin-top: 10px">
+                  <button class="btn" id="btnElegantDefaults">恢复推荐值</button>
+                  <button class="btn primary" id="btnElegantGenerate">生成优美步态并写回</button>
                 </div>
               </div>
             </div>
@@ -937,12 +1021,24 @@
  0,    0,   19,   33,   33,   21,   20,   27,   28,   32
 };`;
 
+      const EXAMPLE_SKILL_TEXT = String.raw`const int8_t user2[] PROGMEM = {
+  -2, 0, 0, 1, 1, 3, 30,
+   0, 0, 31, 32, 34, 29, 19, 11, 16, 25, 1, 0, 0, 0,
+   0, 0, -20, 23, 34, 49, 17, 0, 6, 1, 1, 0, 0, 0,
+};`;
+
       const els = {
         dataInput: document.getElementById("dataInput"),
         autoParse: document.getElementById("autoParse"),
         btnParse: document.getElementById("btnParse"),
         btnClear: document.getElementById("btnClear"),
         btnExample: document.getElementById("btnExample"),
+        btnExampleSkill: document.getElementById("btnExampleSkill"),
+        btnRestoreLast: document.getElementById("btnRestoreLast"),
+        dataMode: document.getElementById("dataMode"),
+        btnReverseFrames: document.getElementById("btnReverseFrames"),
+        btnMirrorFrames: document.getElementById("btnMirrorFrames"),
+        btnGenerateFrontLeftLimp: document.getElementById("btnGenerateFrontLeftLimp"),
         parseError: document.getElementById("parseError"),
         statusDot: document.getElementById("statusDot"),
         statusText: document.getElementById("statusText"),
@@ -1002,6 +1098,16 @@
         ikIters: document.getElementById("ikIters"),
         ikDamping: document.getElementById("ikDamping"),
         ikPointCount: document.getElementById("ikPointCount"),
+        elegantFrameCount: document.getElementById("elegantFrameCount"),
+        elegantIntervalMs: document.getElementById("elegantIntervalMs"),
+        elegantStepMm: document.getElementById("elegantStepMm"),
+        elegantLiftMm: document.getElementById("elegantLiftMm"),
+        elegantDutyFactor: document.getElementById("elegantDutyFactor"),
+        elegantLandingSoftness: document.getElementById("elegantLandingSoftness"),
+        elegantSwingSkew: document.getElementById("elegantSwingSkew"),
+        elegantSmoothPasses: document.getElementById("elegantSmoothPasses"),
+        btnElegantDefaults: document.getElementById("btnElegantDefaults"),
+        btnElegantGenerate: document.getElementById("btnElegantGenerate"),
         btnReset: document.getElementById("btnReset"),
         smoothStartFrame: document.getElementById("smoothStartFrame"),
         smoothEndFrame: document.getElementById("smoothEndFrame"),
@@ -1026,7 +1132,7 @@
       const state = {
         dataset: {
           rawText: "",
-          header: { frameCount: 0, scale: 1, intervalMs: 30 },
+          header: { frameCount: 0, scale: 1, intervalMs: 30, motionType: "gait", raw: [0, 0, 0, 1, 0, 30] },
           channelCount: 10,
           frames: [],
           parseError: "",
@@ -1156,7 +1262,7 @@
         };
       }
 
-      function parseGaitText(rawText) {
+      function extractMotionNumbers(rawText) {
         // 中文注释：提取整数时，必须排除标识符里的数字（例如 int8_t 的“8”），否则帧头会错位。
         const s = String(rawText);
 
@@ -1175,74 +1281,128 @@
           const n = Number.parseInt(text, 10);
           if (Number.isFinite(n)) nums.push(n);
         }
+        return nums;
+      }
 
-        if (nums.length < 6) return { ok: false, error: "解析失败：未找到足够的数值（至少需要 6 个帧头字段）" };
-
-        // 中文注释：允许输入文本在帧头前夹杂少量数字（例如宏、版本号等），用启发式自动定位帧头。
-        let headerStart = 0;
-        let bestScore = Number.POSITIVE_INFINITY;
-        const scanLimit = Math.min(nums.length - 6, 200);
-        for (let i = 0; i <= scanLimit; i++) {
-          const fc = nums[i] | 0;
-          const itv = nums[i + 5] | 0;
-          if (fc <= 0 || fc > 2000) continue;
-          if (itv <= 0 || itv > 10000) continue;
-          const bodyLen = nums.length - (i + 6);
-          const cc = bodyLen / fc;
-          if (!Number.isInteger(cc)) continue;
-          const score = Math.abs(cc - 10) + i * 0.01;
-          if (score < bestScore) {
-            bestScore = score;
-            headerStart = i;
+      function estimateSkillIntervalMs(frames) {
+        if (!Array.isArray(frames) || !frames.length) return 180;
+        let delaySum = 0;
+        let delayCount = 0;
+        let speedSum = 0;
+        let speedCount = 0;
+        for (const frame of frames) {
+          if (!Array.isArray(frame)) continue;
+          const delayRaw = Number(frame[11]);
+          if (Number.isFinite(delayRaw) && delayRaw > 0) {
+            delaySum += delayRaw * 50;
+            delayCount++;
+          }
+          const speedRaw = Number(frame[10]);
+          if (Number.isFinite(speedRaw) && speedRaw > 0) {
+            speedSum += clamp(Math.round(900 / Math.max(1, speedRaw)), 80, 260);
+            speedCount++;
           }
         }
+        if (delayCount > 0) return clamp(Math.round(delaySum / delayCount), 40, 1000);
+        if (speedCount > 0) return clamp(Math.round(speedSum / speedCount), 80, 320);
+        return 180;
+      }
 
-        const foundHeader = Number.isFinite(bestScore) && bestScore !== Number.POSITIVE_INFINITY;
-
-        const headerRaw6 = nums.slice(headerStart, headerStart + 6).map((x) => (Number.isFinite(x) ? (x | 0) : 0));
-        const frameCount = headerRaw6[0] | 0;
-        const scale = Number.isFinite(headerRaw6[3]) ? headerRaw6[3] : 1;
-        const intervalMs = Number.isFinite(headerRaw6[5]) ? headerRaw6[5] : 30;
-
-        if (frameCount <= 0 || frameCount > 2000) {
-          const head = nums.slice(0, 12).join(", ");
-          const hint = foundHeader ? "" : "（提示：可能把标识符里的数字当成了数据，例如 int8_t 的 8。建议只粘贴大括号内数组，或检查输入里是否夹杂数字。）";
-          return { ok: false, error: `解析失败：帧数不合法：${frameCount}${hint}\n前 12 个提取到的数值：${head}` };
-        }
-        if (intervalMs <= 0 || intervalMs > 10000) {
-          const head = nums.slice(0, 12).join(", ");
-          const hint = foundHeader ? "" : "（提示：可能把标识符里的数字当成了数据，例如 int8_t 的 8。建议只粘贴大括号内数组，或检查输入里是否夹杂数字。）";
-          return { ok: false, error: `解析失败：intervalMs 不合法：${intervalMs}${hint}\n前 12 个提取到的数值：${head}` };
-        }
-
+      function tryParseGaitAt(nums, headerStart) {
+        const frameCount = nums[headerStart] | 0;
+        const intervalMs = nums[headerStart + 5] | 0;
+        if (frameCount <= 0 || frameCount > 2000) return null;
+        if (intervalMs <= 0 || intervalMs > 10000) return null;
         const body = nums.slice(headerStart + 6);
-        if (body.length === 0) {
-          return { ok: false, error: "解析失败：帧头后没有帧数据" };
-        }
-
+        if (!body.length) return null;
         const channelCount = body.length / frameCount;
-        if (!Number.isInteger(channelCount)) {
-          return {
-            ok: false,
-            error: `解析失败：数据长度不匹配。帧头后共有 ${body.length} 个数值，无法平均分成 ${frameCount} 帧。`,
-          };
-        }
-        if (channelCount < 6) {
-          return { ok: false, error: `解析失败：通道数太少：${channelCount}（期望 10）` };
-        }
-
+        if (!Number.isInteger(channelCount) || channelCount < 10) return null;
         const frames = [];
         for (let i = 0; i < frameCount; i++) {
           const start = i * channelCount;
           frames.push(body.slice(start, start + channelCount));
         }
-
+        const rawHeader = nums.slice(headerStart, headerStart + 6).map((x) => (Number.isFinite(x) ? (x | 0) : 0));
         return {
           ok: true,
-          header: { frameCount, scale, intervalMs, headerStart, raw6: headerRaw6 },
+          score: Math.abs(channelCount - 10) + headerStart * 0.01,
+          header: {
+            frameCount,
+            scale: Number.isFinite(rawHeader[3]) ? rawHeader[3] : 1,
+            intervalMs,
+            headerStart,
+            raw: rawHeader,
+            motionType: "gait",
+            period: frameCount,
+          },
           channelCount,
           frames,
         };
+      }
+
+      function tryParseSkillAt(nums, headerStart) {
+        const period = nums[headerStart] | 0;
+        if (period >= 0 || period < -2000) return null;
+        const frameCount = Math.abs(period);
+        if (frameCount <= 0 || frameCount > 2000) return null;
+        const body = nums.slice(headerStart + 7);
+        if (!body.length) return null;
+        const channelCount = body.length / frameCount;
+        if (!Number.isInteger(channelCount) || channelCount < 10) return null;
+        const frames = [];
+        for (let i = 0; i < frameCount; i++) {
+          const start = i * channelCount;
+          frames.push(body.slice(start, start + channelCount));
+        }
+        const rawHeader = nums.slice(headerStart, headerStart + 7).map((x) => (Number.isFinite(x) ? (x | 0) : 0));
+        return {
+          ok: true,
+          score: Math.abs(channelCount - 14) + headerStart * 0.01,
+          header: {
+            frameCount,
+            scale: Number.isFinite(rawHeader[3]) ? rawHeader[3] : 1,
+            intervalMs: estimateSkillIntervalMs(frames),
+            headerStart,
+            raw: rawHeader,
+            motionType: "skill",
+            period,
+          },
+          channelCount,
+          frames,
+        };
+      }
+
+      function parseMotionText(rawText, forcedMode = "auto") {
+        const nums = extractMotionNumbers(rawText);
+
+        if (nums.length < 6) return { ok: false, error: "解析失败：未找到足够的数值（至少需要 6 个帧头字段）" };
+
+        // 中文注释：同时尝试 gait(6头+10通道) 与 skill(7头+14通道)，自动选更匹配的一种。
+        const candidates = [];
+        const scanLimit = Math.min(nums.length - 6, 200);
+        for (let i = 0; i <= scanLimit; i++) {
+          if (forcedMode === "auto" || forcedMode === "gait") {
+            const gait = tryParseGaitAt(nums, i);
+            if (gait) candidates.push(gait);
+          }
+          if (forcedMode === "auto" || forcedMode === "skill") {
+            const skill = tryParseSkillAt(nums, i);
+            if (skill) candidates.push(skill);
+          }
+        }
+        if (!candidates.length) {
+          const head = nums.slice(0, 16).join(", ");
+          const hint =
+            forcedMode === "skill"
+              ? "当前按“技能”格式解析失败，请检查是否为 7 字节帧头 + 每帧 14 字段。"
+              : forcedMode === "gait"
+                ? "当前按“步态”格式解析失败，请检查是否为 6 字节帧头 + 每帧 10 通道。"
+                : "自动识别失败，请尝试切换“数组类型”为步态或技能后重新解析。";
+          return { ok: false, error: `解析失败：未找到合法的步态/技能数组。\n${hint}\n前 16 个提取到的数值：${head}` };
+        }
+        candidates.sort((a, b) => a.score - b.score);
+        const best = candidates[0];
+        return { ok: true, header: best.header, channelCount: best.channelCount, frames: best.frames };
       }
 
       function getAngleScale() {
@@ -1251,10 +1411,48 @@
         return Number.isFinite(s) && s !== 0 ? s : 1;
       }
 
-      function getFrameDurationMs() {
-        const base = Number(state.dataset.header.intervalMs) || 30;
+      function isSkillDataset() {
+        return String((state.dataset.header && state.dataset.header.motionType) || "gait") === "skill";
+      }
+
+      function getFramePlaybackDurationMs(frameIndex = 0) {
+        const frames = state.dataset.frames || [];
+        const i = clamp(Math.floor(Number(frameIndex) || 0), 0, Math.max(0, frames.length - 1));
+        let base = Number(state.dataset.header.intervalMs) || 30;
+        if (isSkillDataset() && frames.length) {
+          const frame = frames[i] || [];
+          const delayRaw = Number(frame[11]);
+          const speedRaw = Number(frame[10]);
+          if (Number.isFinite(delayRaw) && delayRaw > 0) {
+            base = delayRaw * 50;
+          }
+          if ((!Number.isFinite(delayRaw) || delayRaw <= 0) && Number.isFinite(speedRaw) && speedRaw > 0) {
+            base = clamp(Math.round(900 / Math.max(1, speedRaw)), 80, 260);
+          }
+          if (!Number.isFinite(base) || base <= 0) base = 180;
+        }
         const sp = Number(state.sim.speed) || 1;
         return base / sp;
+      }
+
+      function getFrameDurationMs(frameIndex = state.playback.frameIndex || 0) {
+        return getFramePlaybackDurationMs(frameIndex);
+      }
+
+      function getPlaybackTimeAtFrame(frameIndex = 0) {
+        const frames = state.dataset.frames || [];
+        const target = clamp(Math.floor(Number(frameIndex) || 0), 0, Math.max(0, frames.length));
+        let sum = 0;
+        for (let i = 0; i < target; i++) sum += getFramePlaybackDurationMs(i);
+        return sum;
+      }
+
+      function getTotalPlaybackDurationMs() {
+        const frames = state.dataset.frames || [];
+        if (!frames.length) return 0;
+        let sum = 0;
+        for (let i = 0; i < frames.length; i++) sum += getFramePlaybackDurationMs(i);
+        return sum;
       }
 
       function getSmootingAlpha() {
@@ -1268,12 +1466,61 @@
         return a + (b - a) * t;
       }
 
+      function smooth01(t) {
+        const u = clamp(Number(t) || 0, 0, 1);
+        return u * u * (3 - 2 * u);
+      }
+
+      function easeInOutSine01(t) {
+        const u = clamp(Number(t) || 0, 0, 1);
+        return 0.5 - 0.5 * Math.cos(Math.PI * u);
+      }
+
+      function fract01(x) {
+        const u = Number(x) || 0;
+        return u - Math.floor(u);
+      }
+
       function getPoseAt(timeMs) {
         const frames = state.dataset.frames;
         if (!frames.length) return null;
         const n = frames.length;
-        const frameMs = getFrameDurationMs();
+        if (isSkillDataset()) {
+          const totalMs = getTotalPlaybackDurationMs();
+          if (totalMs <= 0) {
+            return { pose: frames[0], frameIndex: 0, frameFloat: 0, cycleIndex: 0 };
+          }
+          let t = timeMs;
+          let cycleIndex = 0;
+          if (state.sim.loop) {
+            cycleIndex = Math.floor(timeMs / totalMs);
+            t = ((t % totalMs) + totalMs) % totalMs;
+          } else {
+            t = clamp(t, 0, Math.max(0, totalMs - 0.0001));
+          }
 
+          let acc = 0;
+          let i0 = 0;
+          for (; i0 < n; i0++) {
+            const dur = getFramePlaybackDurationMs(i0);
+            if (t < acc + dur || i0 === n - 1) break;
+            acc += dur;
+          }
+          const dur = Math.max(1e-6, getFramePlaybackDurationMs(i0));
+          const frac = clamp((t - acc) / dur, 0, 1);
+          const i1 = state.sim.loop ? (i0 + 1) % n : Math.min(n - 1, i0 + 1);
+          const a = frames[i0];
+          if (state.sim.interpolation !== "linear") {
+            return { pose: a, frameIndex: i0, frameFloat: i0 + frac + cycleIndex * n, cycleIndex };
+          }
+          const b = frames[i1];
+          const cc = Math.min(a.length, b.length);
+          const out = new Array(cc);
+          for (let i = 0; i < cc; i++) out[i] = lerp(a[i], b[i], frac);
+          return { pose: out, frameIndex: i0, frameFloat: i0 + frac + cycleIndex * n, cycleIndex };
+        }
+
+        const frameMs = getFrameDurationMs();
         const totalMs = n * frameMs;
         let t = timeMs;
         // 中文注释：循环播放时需要保留“第几圈”，用于持续行走（机体位移不回到原点）。
@@ -2134,8 +2381,12 @@
         els.kvTuneCalf.textContent = String(calf);
       }
 
-      function buildNumbersBlock(headerRaw6, frames, channelCount) {
-        const h = Array.isArray(headerRaw6) && headerRaw6.length >= 6 ? headerRaw6.slice(0, 6) : [frames.length, 0, 0, 1, 0, 30];
+      function buildNumbersBlock(headerRaw, frames, channelCount, motionType = "gait") {
+        const fallbackHeader =
+          motionType === "skill" ? [-Math.max(1, frames.length), 0, 0, 1, 0, 0, 0] : [frames.length, 0, 0, 1, 0, 30];
+        const minHeaderLen = motionType === "skill" ? 7 : 6;
+        const h =
+          Array.isArray(headerRaw) && headerRaw.length >= minHeaderLen ? headerRaw.slice(0, minHeaderLen) : fallbackHeader.slice();
         h[0] = frames.length | 0;
         const cc = Math.max(1, Number(channelCount) || 10);
 
@@ -2156,8 +2407,9 @@
       function writeDatasetBackToTextArea() {
         // 中文注释：把当前 frames 的修改自动写回左侧文本，用户就不用再去手工找数组位置改了。
         const raw = String(state.dataset.rawText || els.dataInput.value || "");
-        const headerRaw6 = (state.dataset.header && state.dataset.header.raw6) || null;
-        const body = buildNumbersBlock(headerRaw6, state.dataset.frames || [], state.dataset.channelCount || 10);
+        const headerRaw = (state.dataset.header && state.dataset.header.raw) || null;
+        const motionType = String((state.dataset.header && state.dataset.header.motionType) || "gait");
+        const body = buildNumbersBlock(headerRaw, state.dataset.frames || [], state.dataset.channelCount || 10, motionType);
 
         const l = raw.lastIndexOf("{");
         const r = raw.lastIndexOf("}");
@@ -2188,6 +2440,68 @@
             }
           }
         });
+      }
+
+      function applyReverseFrames() {
+        const frames = state.dataset.frames;
+        if (!frames || !frames.length) return;
+        
+        frames.reverse();
+
+        invalidateMotionCache();
+        recomputeLegSeries();
+        updateTrajectory();
+        updateBodyTrajectoryFromCache();
+        updatePoseFromTimeline();
+        drawChart();
+        updateInfoUI();
+        writeDatasetBackToTextArea();
+        
+        setStatus("ok", "已应用时间轴逆序 (后退变前进)");
+      }
+
+      function applyMirrorFrames() {
+        const frames = state.dataset.frames;
+        if (!frames || !frames.length) return;
+
+        for (let i = 0; i < frames.length; i++) {
+          const f = frames[i];
+          if (!Array.isArray(f)) continue;
+          
+          // 通道0: Head Yaw 取反
+          if (f.length > 0) {
+            f[0] = - (Number.isFinite(f[0]) ? (f[0] | 0) : 0);
+          }
+          // 通道1: Head Pitch 不变
+
+          // 交换 FL (2) 和 FR (3)
+          if (f.length > 3) {
+            let t = f[2]; f[2] = f[3]; f[3] = t;
+          }
+          // 交换 BR (4) 和 BL (5)
+          if (f.length > 5) {
+            let t = f[4]; f[4] = f[5]; f[5] = t;
+          }
+          // 交换 FL小腿 (6) 和 FR小腿 (7)
+          if (f.length > 7) {
+            let t = f[6]; f[6] = f[7]; f[7] = t;
+          }
+          // 交换 BR小腿 (8) 和 BL小腿 (9)
+          if (f.length > 9) {
+            let t = f[8]; f[8] = f[9]; f[9] = t;
+          }
+        }
+
+        invalidateMotionCache();
+        recomputeLegSeries();
+        updateTrajectory();
+        updateBodyTrajectoryFromCache();
+        updatePoseFromTimeline();
+        drawChart();
+        updateInfoUI();
+        writeDatasetBackToTextArea();
+        
+        setStatus("ok", "已应用左右镜像 (左转变右转)");
       }
 
       function applyGlobalOffsets() {
@@ -2406,6 +2720,526 @@
         updatePoseFromTimeline();
 
         setStatus("ok", `区间 IK 抬腿写回：${legKey} @ [${s}, ${e}]，抬腿高度=${Number(liftMm) || 0}mm`);
+      }
+
+      function resetElegantGeneratorDefaults() {
+        if (els.elegantFrameCount) els.elegantFrameCount.value = "40";
+        if (els.elegantIntervalMs) els.elegantIntervalMs.value = "54";
+        if (els.elegantStepMm) els.elegantStepMm.value = "18";
+        if (els.elegantLiftMm) els.elegantLiftMm.value = "14";
+        if (els.elegantDutyFactor) els.elegantDutyFactor.value = "0.72";
+        if (els.elegantLandingSoftness) els.elegantLandingSoftness.value = "0.7";
+        if (els.elegantSwingSkew) els.elegantSwingSkew.value = "-0.04";
+        if (els.elegantSmoothPasses) els.elegantSmoothPasses.value = "2";
+      }
+
+      function getElegantGeneratorParams() {
+        const srcCount = Math.max(12, Math.floor(Number(els.elegantFrameCount && els.elegantFrameCount.value) || state.dataset.frames.length || 40));
+        return {
+          frameCount: clamp(srcCount, 12, 96),
+          intervalMs: clamp(Math.floor(Number(els.elegantIntervalMs && els.elegantIntervalMs.value) || 54), 10, 200),
+          stepMm: clamp(Number(els.elegantStepMm && els.elegantStepMm.value) || 18, 2, 80),
+          liftMm: clamp(Number(els.elegantLiftMm && els.elegantLiftMm.value) || 14, 1, 60),
+          dutyFactor: clamp(Number(els.elegantDutyFactor && els.elegantDutyFactor.value) || 0.72, 0.5, 0.9),
+          landingSoftness: clamp(Number(els.elegantLandingSoftness && els.elegantLandingSoftness.value) || 0.7, 0, 1),
+          swingSkew: clamp(Number(els.elegantSwingSkew && els.elegantSwingSkew.value) || 0, -0.3, 0.3),
+          smoothPasses: clamp(Math.floor(Number(els.elegantSmoothPasses && els.elegantSmoothPasses.value) || 0), 0, 8),
+        };
+      }
+
+      function getElegantLegPhase(legKey) {
+        // 中文注释：采用稳定优先的对角相位：FL+BR 一组，FR+BL 一组，后者滞后半周期。
+        return legKey === "FL" || legKey === "BR" ? 0 : 0.5;
+      }
+
+      function sampleElegantLegOffsets(cycleU, legKey, params, scale) {
+        const phase = fract01(cycleU + getElegantLegPhase(legKey));
+        const duty = clamp(params.dutyFactor, 0.5, 0.9);
+        const stepW = (params.stepMm / 1000) * scale;
+        const liftW = (params.liftMm / 1000) * scale;
+        const swingSkew = clamp(params.swingSkew, -0.3, 0.3);
+        const halfStep = stepW * 0.5;
+
+        let dx = 0;
+        let dy = 0;
+        if (phase < duty) {
+          // 中文注释：支撑相让足端相对机身缓慢向后走，形成“身体向前越过支撑脚”的观感。
+          const t = easeInOutSine01(phase / Math.max(1e-6, duty));
+          dx = lerp(halfStep, -halfStep, t);
+        } else {
+          // 中文注释：摆动相用“前送 + 抬脚 + 柔和落地”的连续曲线，不再依赖人工逐帧揉数值。
+          const t = (phase - duty) / Math.max(1e-6, 1 - duty);
+          const landPortion = clamp(0.25 + params.landingSoftness * 0.35, 0.2, 0.72);
+          const holdPortion = clamp(0.12 + params.landingSoftness * 0.16, 0.08, 0.3);
+          const risePortion = Math.max(0.12, 1 - landPortion - holdPortion);
+          const skew = swingSkew * 0.5 + 0.5;
+
+          let xBlend = smooth01(t);
+          xBlend = clamp(lerp(xBlend, Math.pow(clamp(t, 0, 1), 1.0 + swingSkew), Math.abs(swingSkew)), 0, 1);
+          xBlend = clamp(lerp(xBlend, skew * xBlend + (1 - skew) * easeInOutSine01(t), 0.35), 0, 1);
+          dx = lerp(-halfStep, halfStep, xBlend);
+
+          if (t < risePortion) {
+            const u = t / Math.max(1e-6, risePortion);
+            dy = liftW * Math.sin(0.5 * Math.PI * u);
+          } else if (t < risePortion + holdPortion) {
+            dy = liftW;
+          } else {
+            const u = (t - risePortion - holdPortion) / Math.max(1e-6, landPortion);
+            // 中文注释：落地段单独拉长，并用 smoothstep 压平斜率，避免真机出现“往下打”的感觉。
+            dy = liftW * (1 - smooth01(u));
+          }
+        }
+        return { dx, dy };
+      }
+
+      function getLegJointWorldPosition(legKey, jointType) {
+        if (!urdfRobot || !urdfRobot.joints) return null;
+        const jointName =
+          jointType === "thigh"
+            ? legKey === "FL"
+              ? JOINT_MAP.thighFL
+              : legKey === "FR"
+                ? JOINT_MAP.thighFR
+                : legKey === "BR"
+                  ? JOINT_MAP.thighRR
+                  : JOINT_MAP.thighRL
+            : legKey === "FL"
+              ? JOINT_MAP.calfFL
+              : legKey === "FR"
+                ? JOINT_MAP.calfFR
+                : legKey === "BR"
+                  ? JOINT_MAP.calfRR
+                  : JOINT_MAP.calfRL;
+        const joint = urdfRobot.joints[jointName];
+        if (!joint) return null;
+        return joint.getWorldPosition(new THREE.Vector3());
+      }
+
+      function detectElegantForeAxis(baseFrame) {
+        const front = [];
+        const back = [];
+        for (const legKey of LEG_KEYS) {
+          const p = getLegJointWorldPosition(legKey, "thigh");
+          if (!p) continue;
+          if (legKey === "FL" || legKey === "FR") front.push(p);
+          else back.push(p);
+        }
+        if (!front.length || !back.length) {
+          return new THREE.Vector3(1, 0, 0);
+        }
+        const frontAvg = new THREE.Vector3();
+        const backAvg = new THREE.Vector3();
+        for (const p of front) frontAvg.add(p);
+        for (const p of back) backAvg.add(p);
+        frontAvg.multiplyScalar(1 / front.length);
+        backAvg.multiplyScalar(1 / back.length);
+        const fore = frontAvg.sub(backAvg);
+        fore.y = 0;
+        if (fore.lengthSq() < 1e-12) return new THREE.Vector3(1, 0, 0);
+        return fore.normalize();
+      }
+
+      function detectElegantLegStepDirection(legKey, baseFrame, foreAxis) {
+        const idx = getLegTuneChannelIndices(legKey);
+        const thigh0 = Number.isFinite(baseFrame[idx.thigh]) ? Number(baseFrame[idx.thigh]) : 0;
+        const calf0 = Number.isFinite(baseFrame[idx.calf]) ? Number(baseFrame[idx.calf]) : 0;
+        const deltaDeg = 6;
+        const pMinus = new THREE.Vector3();
+        const pPlus = new THREE.Vector3();
+
+        setLegAnglesDegForIk(legKey, thigh0 - deltaDeg, calf0, baseFrame);
+        urdfRobot.updateMatrixWorld(true);
+        if (!getLegContactPointWorld(legKey, pMinus, false)) return foreAxis.clone();
+
+        setLegAnglesDegForIk(legKey, thigh0 + deltaDeg, calf0, baseFrame);
+        urdfRobot.updateMatrixWorld(true);
+        if (!getLegContactPointWorld(legKey, pPlus, false)) return foreAxis.clone();
+
+        setRobotPoseFromFrame(baseFrame);
+        urdfRobot.updateMatrixWorld(true);
+
+        const dir = pPlus.sub(pMinus);
+        dir.y = 0;
+        if (dir.lengthSq() < 1e-12) return foreAxis.clone();
+        dir.normalize();
+        if (dir.dot(foreAxis) < 0) dir.negate();
+        return dir;
+      }
+
+      function smoothElegantGeneratedFrames(frames, passes, channels = [2, 3, 4, 5, 6, 7, 8, 9]) {
+        const n = frames.length;
+        if (n < 3 || passes <= 0) return;
+        for (let pass = 0; pass < passes; pass++) {
+          const oldFrames = frames.map((f) => (Array.isArray(f) ? f.slice() : Array.from(f)));
+          for (let i = 0; i < n; i++) {
+            const a = (i - 1 + n) % n;
+            const b = i;
+            const c = (i + 1) % n;
+            for (const ch of channels) {
+              const va = Number.isFinite(oldFrames[a][ch]) ? oldFrames[a][ch] : 0;
+              const vb = Number.isFinite(oldFrames[b][ch]) ? oldFrames[b][ch] : 0;
+              const vc = Number.isFinite(oldFrames[c][ch]) ? oldFrames[c][ch] : 0;
+              frames[i][ch] = va * 0.2 + vb * 0.6 + vc * 0.2;
+            }
+          }
+        }
+      }
+
+      function roundElegantGeneratedFrames(frames, channels = [2, 3, 4, 5, 6, 7, 8, 9]) {
+        for (const frame of frames) {
+          if (!Array.isArray(frame)) continue;
+          for (const ch of channels) {
+            if (!Number.isFinite(frame[ch])) continue;
+            frame[ch] = Math.round(frame[ch]);
+          }
+        }
+      }
+
+      function clonePoseFrame(sourceFrame, channelCount = 10) {
+        const out = new Array(channelCount).fill(0);
+        for (let i = 0; i < channelCount; i++) {
+          out[i] = Number.isFinite(sourceFrame && sourceFrame[i]) ? Number(sourceFrame[i]) : 0;
+        }
+        return out;
+      }
+
+      function sampleFrontLeftLimpOffsets(cycleU, legKey, params, scale) {
+        if (legKey === "FL") return { dx: 0, dy: 0 };
+        const duty = clamp(params.dutyFactor + 0.06, 0.56, 0.9);
+        const phaseBase = legKey === "BR" ? 0 : legKey === "FR" ? 1 / 3 : 2 / 3;
+        const phase = fract01(cycleU + phaseBase);
+        const stepScale = legKey === "FR" ? 0.8 : legKey === "BL" ? 0.9 : 1.0;
+        const liftScale = legKey === "FR" ? 0.82 : 1.0;
+        const stepW = (params.stepMm * stepScale / 1000) * scale;
+        const liftW = (params.liftMm * liftScale / 1000) * scale;
+        const halfStep = stepW * 0.5;
+
+        let dx = 0;
+        let dy = 0;
+        if (phase < duty) {
+          const t = easeInOutSine01(phase / Math.max(1e-6, duty));
+          dx = lerp(halfStep, -halfStep, t);
+        } else {
+          const t = (phase - duty) / Math.max(1e-6, 1 - duty);
+          const landPortion = clamp(0.28 + params.landingSoftness * 0.28, 0.2, 0.7);
+          const holdPortion = clamp(0.1 + params.landingSoftness * 0.14, 0.08, 0.26);
+          const risePortion = Math.max(0.14, 1 - landPortion - holdPortion);
+          dx = lerp(-halfStep, halfStep, smooth01(t));
+          if (t < risePortion) {
+            dy = liftW * Math.sin(0.5 * Math.PI * (t / Math.max(1e-6, risePortion)));
+          } else if (t < risePortion + holdPortion) {
+            dy = liftW;
+          } else {
+            const u = (t - risePortion - holdPortion) / Math.max(1e-6, landPortion);
+            dy = liftW * (1 - smooth01(u));
+          }
+        }
+        return { dx, dy };
+      }
+
+      function buildElegantIkOptions(legKey, baseFrame, prevFrame) {
+        const idx = getLegTuneChannelIndices(legKey);
+        const baseThigh = Number.isFinite(baseFrame[idx.thigh]) ? Number(baseFrame[idx.thigh]) : 0;
+        const baseCalf = Number.isFinite(baseFrame[idx.calf]) ? Number(baseFrame[idx.calf]) : 0;
+        const prevThigh = prevFrame && Number.isFinite(prevFrame[idx.thigh]) ? Number(prevFrame[idx.thigh]) : baseThigh;
+        const prevCalf = prevFrame && Number.isFinite(prevFrame[idx.calf]) ? Number(prevFrame[idx.calf]) : baseCalf;
+        const isFrontLeg = legKey === "FL" || legKey === "FR";
+        const isLeftLeg = legKey === "FL" || legKey === "BL";
+
+        // 中文注释：优美步态阶段优先保持“首帧定义的弯腿分支”，
+        // 不允许数值 IK 为了凑目标点突然折到机身内侧，尤其要先保护前腿避开结构干涉。
+        const thighLower = isFrontLeg ? 12 : 14;
+        const thighUpper = isFrontLeg ? 18 : 16;
+        const calfLower = isFrontLeg ? 8 : 10;
+        const calfUpper = isFrontLeg ? 18 : 20;
+
+        const preferredMix = prevFrame ? 0.7 : 0.0;
+        const preferredThigh = lerp(baseThigh, prevThigh, preferredMix);
+        const preferredCalf = lerp(baseCalf, prevCalf, preferredMix);
+
+        const frontSafetyLift = legKey === "FL" ? 2 : 0;
+        const calfMin = Math.max(baseCalf - calfLower, isLeftLeg ? 0 : -20) + frontSafetyLift;
+
+        return {
+          preferredAngles: {
+            thigh: preferredThigh,
+            calf: Math.max(preferredCalf, calfMin),
+          },
+          preferredWeight: legKey === "FL" ? 0.55 : isFrontLeg ? 0.4 : 0.28,
+          angleBounds: {
+            thighMin: baseThigh - thighLower,
+            thighMax: baseThigh + thighUpper,
+            calfMin,
+            calfMax: baseCalf + calfUpper,
+          },
+        };
+      }
+
+      function applyElegantGaitGenerator() {
+        const srcFrames = state.dataset.frames;
+        if (!srcFrames || !srcFrames.length) {
+          alert("请先解析一组基础数组，再生成优美步态。");
+          return;
+        }
+        if (!urdfRobot) {
+          alert("模型尚未加载完成，请稍后再试。");
+          return;
+        }
+
+        const params = getElegantGeneratorParams();
+        const scale = Number(state.sim.modelScale) || 1;
+        const baseFrame = (srcFrames[0] && srcFrames[0].slice) ? srcFrames[0].slice() : Array.from(srcFrames[0] || []);
+        const prevFramesRef = state.dataset.frames;
+        const prevMotionEnabled = !!state.motion.enabled;
+        const prevPoseEnabled = !!state.motion.poseEnabled;
+        let generatedApplied = false;
+
+        try {
+          // 中文注释：生成步态时先冻结机体运动/姿态缓存，避免旧数组的位移拟合影响新的 IK 解算基准。
+          state.motion.enabled = false;
+          state.motion.poseEnabled = false;
+          invalidateMotionCache();
+
+          applyMotionPoseAt(0);
+          setRobotPoseFromFrame(baseFrame);
+          urdfRobot.updateMatrixWorld(true);
+
+          const neutralTargets = {};
+          const foreAxis = detectElegantForeAxis(baseFrame);
+          const legStepDirs = {};
+          for (const legKey of LEG_KEYS) {
+            const p = new THREE.Vector3();
+            if (!getLegContactPointWorld(legKey, p, false)) {
+              alert(`无法获取 ${legKey} 的基础足端位置，请检查当前首帧姿态是否有效。`);
+              return;
+            }
+            neutralTargets[legKey] = p.clone();
+            legStepDirs[legKey] = detectElegantLegStepDirection(legKey, baseFrame, foreAxis);
+          }
+
+          setRobotPoseFromFrame(baseFrame);
+          urdfRobot.updateMatrixWorld(true);
+
+          const newFrames = Array.from({ length: params.frameCount }, () => {
+            const f = new Array(Math.max(10, Number(state.dataset.channelCount) || 10)).fill(0);
+            for (let i = 0; i < f.length; i++) {
+              f[i] = Number.isFinite(baseFrame[i]) ? (baseFrame[i] | 0) : 0;
+            }
+            return f;
+          });
+
+          // 中文注释：solveLegIkForFrame 内部默认写回 state.dataset.frames；
+          // 这里先把目标帧数组切到 newFrames，确保生成结果真正写进新数组，而不是误写回旧数组。
+          state.dataset.frames = newFrames;
+
+          for (let i = 0; i < newFrames.length; i++) {
+            const cycleU = i / newFrames.length;
+            const frame = newFrames[i];
+            for (const legKey of LEG_KEYS) {
+              const idx = getLegTuneChannelIndices(legKey);
+              if (i > 0) {
+                frame[idx.thigh] = newFrames[i - 1][idx.thigh];
+                frame[idx.calf] = newFrames[i - 1][idx.calf];
+              }
+              const offset = sampleElegantLegOffsets(cycleU, legKey, params, scale);
+              const target = neutralTargets[legKey].clone();
+              target.addScaledVector(legStepDirs[legKey] || foreAxis, offset.dx);
+              target.y += offset.dy;
+              const gy = groundYWorldAtWorldXZ(target.x, target.z);
+              if (target.y < gy) target.y = gy;
+              const ikOptions = buildElegantIkOptions(legKey, baseFrame, i > 0 ? newFrames[i - 1] : null);
+              solveLegIkForFrame(legKey, i, target, {
+                writeIntegers: false,
+                preferredAngles: ikOptions.preferredAngles,
+                preferredWeight: ikOptions.preferredWeight,
+                angleBounds: ikOptions.angleBounds,
+              });
+            }
+          }
+
+          smoothElegantGeneratedFrames(newFrames, params.smoothPasses);
+          roundElegantGeneratedFrames(newFrames);
+
+          state.dataset.frames = newFrames;
+          generatedApplied = true;
+          state.dataset.channelCount = Math.max(10, Number(state.dataset.channelCount) || 10);
+          state.dataset.header = {
+            frameCount: newFrames.length,
+            scale: 1,
+            intervalMs: params.intervalMs,
+            headerStart: 0,
+            raw: [newFrames.length, 0, 0, 1, 0, params.intervalMs],
+            motionType: "gait",
+            period: newFrames.length,
+          };
+
+          writeDatasetBackToTextArea();
+          setDatasetFromText(els.dataInput.value);
+
+          state.sim.isPlaying = false;
+          if (els.btnPlay) els.btnPlay.textContent = "播放";
+          state.playback.t = 0;
+          state.playback.frameIndex = 0;
+          state.playback.frameFloat = 0;
+          state.playback.smoothedPose = null;
+          if (els.timeline) els.timeline.value = "0";
+          updatePoseFromTimeline();
+
+          setStatus("ok", `优美步态已生成：${params.frameCount} 帧，interval=${params.intervalMs}ms，步长=${params.stepMm}mm，抬腿=${params.liftMm}mm`);
+        } finally {
+          if (!generatedApplied) {
+            state.dataset.frames = prevFramesRef;
+          }
+          state.motion.enabled = prevMotionEnabled;
+          state.motion.poseEnabled = prevPoseEnabled;
+          invalidateMotionCache();
+          recomputeLegSeries();
+          updateTrajectory();
+          updateBodyTrajectoryFromCache();
+          updatePoseFromTimeline();
+          drawChart();
+          updateInfoUI();
+        }
+      }
+
+      function applyFrontLeftLimpGaitGenerator() {
+        const srcFrames = state.dataset.frames;
+        if (!srcFrames || !srcFrames.length) {
+          alert("请先解析一组技能或步态数组，再生成左前瘸腿步态。");
+          return;
+        }
+        if (!urdfRobot) {
+          alert("模型尚未加载完成，请稍后再试。");
+          return;
+        }
+
+        const params = getElegantGeneratorParams();
+        params.stepMm = clamp(params.stepMm * 0.92, 4, 64);
+        params.liftMm = clamp(params.liftMm * 0.88, 3, 42);
+        params.dutyFactor = clamp(params.dutyFactor + 0.06, 0.58, 0.9);
+
+        const scale = Number(state.sim.modelScale) || 1;
+        const seedA = clonePoseFrame(srcFrames[0], 10);
+        const seedB = clonePoseFrame(srcFrames[Math.min(1, srcFrames.length - 1)] || srcFrames[0], 10);
+        const baseFrame = seedB.slice();
+        const prevFramesRef = state.dataset.frames;
+        const prevMotionEnabled = !!state.motion.enabled;
+        const prevPoseEnabled = !!state.motion.poseEnabled;
+        const lockIdx = getLegTuneChannelIndices("FL");
+        const lockThigh = Number.isFinite(seedB[lockIdx.thigh]) ? Number(seedB[lockIdx.thigh]) : 0;
+        const lockCalf = Number.isFinite(seedB[lockIdx.calf]) ? Number(seedB[lockIdx.calf]) : 0;
+        let generatedApplied = false;
+
+        try {
+          state.motion.enabled = false;
+          state.motion.poseEnabled = false;
+          invalidateMotionCache();
+
+          applyMotionPoseAt(0);
+          setRobotPoseFromFrame(baseFrame);
+          urdfRobot.updateMatrixWorld(true);
+
+          const neutralTargets = {};
+          const foreAxis = detectElegantForeAxis(baseFrame);
+          const legStepDirs = {};
+          for (const legKey of LEG_KEYS) {
+            const p = new THREE.Vector3();
+            if (!getLegContactPointWorld(legKey, p, false)) {
+              alert(`无法获取 ${legKey} 的基础足端位置，请检查当前前两帧姿态是否有效。`);
+              return;
+            }
+            neutralTargets[legKey] = p.clone();
+            if (legKey !== "FL") {
+              legStepDirs[legKey] = detectElegantLegStepDirection(legKey, baseFrame, foreAxis);
+            }
+          }
+
+          const cycleFrames = Array.from({ length: params.frameCount }, () => clonePoseFrame(baseFrame, 10));
+          state.dataset.frames = cycleFrames;
+
+          for (let i = 0; i < cycleFrames.length; i++) {
+            const cycleU = i / cycleFrames.length;
+            const frame = cycleFrames[i];
+            frame[lockIdx.thigh] = lockThigh;
+            frame[lockIdx.calf] = lockCalf;
+
+            for (const legKey of ["FR", "BR", "BL"]) {
+              const idx = getLegTuneChannelIndices(legKey);
+              if (i > 0) {
+                frame[idx.thigh] = cycleFrames[i - 1][idx.thigh];
+                frame[idx.calf] = cycleFrames[i - 1][idx.calf];
+              }
+              const offset = sampleFrontLeftLimpOffsets(cycleU, legKey, params, scale);
+              const target = neutralTargets[legKey].clone();
+              target.addScaledVector(legStepDirs[legKey] || foreAxis, offset.dx);
+              target.y += offset.dy;
+              const gy = groundYWorldAtWorldXZ(target.x, target.z);
+              if (target.y < gy) target.y = gy;
+              const ikOptions = buildElegantIkOptions(legKey, baseFrame, i > 0 ? cycleFrames[i - 1] : null);
+              solveLegIkForFrame(legKey, i, target, {
+                writeIntegers: false,
+                preferredAngles: ikOptions.preferredAngles,
+                preferredWeight: ikOptions.preferredWeight,
+                angleBounds: ikOptions.angleBounds,
+              });
+            }
+          }
+
+          smoothElegantGeneratedFrames(cycleFrames, Math.max(1, params.smoothPasses), [3, 4, 5, 7, 8, 9]);
+          roundElegantGeneratedFrames(cycleFrames, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+          for (const frame of cycleFrames) {
+            frame[lockIdx.thigh] = Math.round(lockThigh);
+            frame[lockIdx.calf] = Math.round(lockCalf);
+          }
+
+          const introFrames = [seedA, seedB];
+          const newFrames = introFrames.concat(cycleFrames);
+          state.dataset.frames = newFrames;
+          state.dataset.channelCount = 10;
+          state.dataset.header = {
+            frameCount: newFrames.length,
+            scale: 1,
+            intervalMs: params.intervalMs,
+            headerStart: 0,
+            raw: [newFrames.length, 0, 0, 1, 0, params.intervalMs],
+            motionType: "gait",
+            period: newFrames.length,
+          };
+          generatedApplied = true;
+          if (els.dataMode) els.dataMode.value = "gait";
+
+          writeDatasetBackToTextArea();
+          setDatasetFromText(els.dataInput.value);
+
+          state.sim.isPlaying = false;
+          if (els.btnPlay) els.btnPlay.textContent = "播放";
+          state.playback.t = 0;
+          state.playback.frameIndex = 0;
+          state.playback.frameFloat = 0;
+          state.playback.smoothedPose = null;
+          if (els.loop) els.loop.checked = true;
+          state.sim.loop = true;
+          if (els.continuousWalk) els.continuousWalk.checked = true;
+          state.motion.continuousWalk = true;
+          if (els.timeline) els.timeline.value = "0";
+          updatePoseFromTimeline();
+
+          setStatus("ok", `已生成左前锁姿三足瘸腿步态：前导 2 帧 + 循环 ${params.frameCount} 帧`);
+        } finally {
+          if (!generatedApplied) {
+            state.dataset.frames = prevFramesRef;
+          }
+          state.motion.enabled = prevMotionEnabled;
+          state.motion.poseEnabled = prevPoseEnabled;
+          invalidateMotionCache();
+          recomputeLegSeries();
+          updateTrajectory();
+          updateBodyTrajectoryFromCache();
+          updatePoseFromTimeline();
+          drawChart();
+          updateInfoUI();
+        }
       }
 
       function exportLegCurveText(legKey, start, end, mode) {
@@ -2683,7 +3517,7 @@
         setRobotJoint(calfJoint, calfRad);
       }
 
-      function solveLegIkForFrame(legKey, frameIndex, targetWorld) {
+      function solveLegIkForFrame(legKey, frameIndex, targetWorld, options = {}) {
         const frames = state.dataset.frames;
         if (!frames || !frames.length) return;
         if (!urdfRobot) return;
@@ -2692,8 +3526,12 @@
         if (!Array.isArray(f)) return;
 
         const idx = getLegTuneChannelIndices(legKey);
-        let thigh = Number.isFinite(f[idx.thigh]) ? (f[idx.thigh] | 0) : 0;
-        let calf = Number.isFinite(f[idx.calf]) ? (f[idx.calf] | 0) : 0;
+        let thigh = Number.isFinite(f[idx.thigh]) ? Number(f[idx.thigh]) : 0;
+        let calf = Number.isFinite(f[idx.calf]) ? Number(f[idx.calf]) : 0;
+        const writeIntegers = options.writeIntegers !== false;
+        const preferredAngles = options.preferredAngles || null;
+        const preferredWeight = clamp(Number(options.preferredWeight) || 0, 0, 1);
+        const angleBounds = options.angleBounds || null;
 
         const iters = Math.max(1, Math.floor(Number(els.ikIters && els.ikIters.value) || 20));
         const damping = clamp(Number(els.ikDamping && els.ikDamping.value) || 0, 0, 1);
@@ -2743,10 +3581,32 @@
           const maxStep = 6;
           thigh = clamp(thigh + clamp(d1 / DEG2RAD, -maxStep, maxStep), -120, 120);
           calf = clamp(calf + clamp(d2 / DEG2RAD, -maxStep, maxStep), -120, 120);
+
+          if (angleBounds) {
+            thigh = clamp(
+              thigh,
+              Number.isFinite(angleBounds.thighMin) ? angleBounds.thighMin : -120,
+              Number.isFinite(angleBounds.thighMax) ? angleBounds.thighMax : 120
+            );
+            calf = clamp(
+              calf,
+              Number.isFinite(angleBounds.calfMin) ? angleBounds.calfMin : -120,
+              Number.isFinite(angleBounds.calfMax) ? angleBounds.calfMax : 120
+            );
+          }
+
+          if (preferredAngles && preferredWeight > 0) {
+            // 中文注释：优美步态更重视姿态连续与弯腿分支稳定，所以每轮都轻微拉回首帧/上一帧附近。
+            const keep = 0.08 + preferredWeight * 0.18;
+            if (Number.isFinite(preferredAngles.thigh)) thigh = lerp(thigh, preferredAngles.thigh, keep);
+            if (Number.isFinite(preferredAngles.calf)) calf = lerp(calf, preferredAngles.calf, keep);
+          }
         }
 
-        f[idx.thigh] = Math.trunc(thigh);
-        f[idx.calf] = Math.trunc(calf);
+        // 中文注释：默认单帧/区间编辑仍写整数，便于直接保存数组；
+        // 但步态生成阶段允许先保留浮点结果，避免子角度变化被过早截断后“卡住不动”。
+        f[idx.thigh] = writeIntegers ? Math.trunc(thigh) : thigh;
+        f[idx.calf] = writeIntegers ? Math.trunc(calf) : calf;
       }
 
       function commitSingleFrameIkEdit(legKey, frameIndex) {
@@ -2843,7 +3703,8 @@
 
       function setDatasetFromText(rawText) {
         state.dataset.rawText = rawText;
-        const res = parseGaitText(rawText);
+        const forcedMode = els.dataMode ? String(els.dataMode.value || "auto") : "auto";
+        const res = parseMotionText(rawText, forcedMode);
         if (!res.ok) {
           state.dataset.parseError = res.error;
           setParseError(res.error);
@@ -2864,11 +3725,19 @@
 
         setParseError("");
         const ignored = Number(res.header.headerStart) > 0 ? `（已忽略前导 ${res.header.headerStart} 个数值）` : "";
-        setStatus("ok", `解析成功：${res.header.frameCount} 帧，${res.channelCount} 通道，interval ${res.header.intervalMs}ms ${ignored}`);
+        const modeLabel = res.header.motionType === "skill" ? "技能" : "步态";
+        setStatus("ok", `解析成功：${modeLabel}，${res.header.frameCount} 帧，${res.channelCount} 通道，interval ${res.header.intervalMs}ms ${ignored}`);
+
+        if (res.header.motionType === "skill") {
+          state.sim.loop = false;
+          state.motion.continuousWalk = false;
+          if (els.loop) els.loop.checked = false;
+          if (els.continuousWalk) els.continuousWalk.checked = false;
+        }
 
         state.playback.frameIndex = clamp(state.playback.frameIndex, 0, Math.max(0, res.frames.length - 1));
         state.playback.frameFloat = state.playback.frameIndex;
-        state.playback.t = state.playback.frameIndex * getFrameDurationMs();
+        state.playback.t = getPlaybackTimeAtFrame(state.playback.frameIndex);
         state.playback.smoothedPose = null;
 
         window.localStorage.setItem("gait_sim_raw", rawText);
@@ -2888,8 +3757,11 @@
 
       function setupUI() {
         const saved = window.localStorage.getItem("gait_sim_raw");
-        els.dataInput.value = saved || EXAMPLE_TEXT;
+        // 中文注释：页面默认总是加载内置示例，避免上一次调坏的缓存数组在刷新后自动恢复，
+        // 让用户误以为“模型初始姿态就不对”。如需继续上次内容，可手动点击“恢复上次”。
+        els.dataInput.value = EXAMPLE_TEXT;
         state.sim.loop = true;
+        resetElegantGeneratorDefaults();
 
         const btnApplyGlobalOffsets = document.getElementById("btnApplyGlobalOffsets");
         if (btnApplyGlobalOffsets) {
@@ -2899,9 +3771,32 @@
         }
 
         els.btnExample.addEventListener("click", () => {
+          if (els.dataMode) els.dataMode.value = "gait";
           els.dataInput.value = EXAMPLE_TEXT;
           setDatasetFromText(els.dataInput.value);
         });
+        if (els.btnExampleSkill) {
+          els.btnExampleSkill.addEventListener("click", () => {
+            if (els.dataMode) els.dataMode.value = "skill";
+            els.dataInput.value = EXAMPLE_SKILL_TEXT;
+            setDatasetFromText(els.dataInput.value);
+          });
+        }
+        if (els.btnRestoreLast) {
+          els.btnRestoreLast.disabled = !saved;
+          els.btnRestoreLast.addEventListener("click", () => {
+            if (!saved) return;
+            els.dataInput.value = saved;
+            setDatasetFromText(els.dataInput.value);
+            setStatus("ok", "已恢复上一次自动保存的数组");
+          });
+        }
+        if (els.btnReverseFrames) {
+          els.btnReverseFrames.addEventListener("click", applyReverseFrames);
+        }
+        if (els.btnMirrorFrames) {
+          els.btnMirrorFrames.addEventListener("click", applyMirrorFrames);
+        }
         els.btnClear.addEventListener("click", () => {
           els.dataInput.value = "";
           setDatasetFromText(els.dataInput.value);
@@ -2909,9 +3804,31 @@
         els.btnParse.addEventListener("click", () => {
           setDatasetFromText(els.dataInput.value);
         });
+        if (els.dataMode) {
+          els.dataMode.addEventListener("change", () => {
+            if (!els.dataInput.value.trim()) return;
+            setDatasetFromText(els.dataInput.value);
+          });
+        }
         els.dataInput.addEventListener("input", () => {
           scheduleAutoParse();
         });
+        if (els.btnElegantDefaults) {
+          els.btnElegantDefaults.addEventListener("click", () => {
+            resetElegantGeneratorDefaults();
+            setStatus("ok", "已恢复优美步态生成推荐参数");
+          });
+        }
+        if (els.btnElegantGenerate) {
+          els.btnElegantGenerate.addEventListener("click", () => {
+            applyElegantGaitGenerator();
+          });
+        }
+        if (els.btnGenerateFrontLeftLimp) {
+          els.btnGenerateFrontLeftLimp.addEventListener("click", () => {
+            applyFrontLeftLimpGaitGenerator();
+          });
+        }
 
         els.btnPlay.addEventListener("click", () => {
           if (!state.dataset.frames.length) return;
@@ -2942,7 +3859,7 @@
           state.sim.isPlaying = false;
           els.btnPlay.textContent = "播放";
           state.playback.frameIndex = Number(els.timeline.value) || 0;
-          state.playback.t = state.playback.frameIndex * getFrameDurationMs();
+          state.playback.t = getPlaybackTimeAtFrame(state.playback.frameIndex);
           state.playback.smoothedPose = null;
           state.playback.frameFloat = state.playback.frameIndex;
           updatePoseFromTimeline();
@@ -2953,7 +3870,7 @@
           state.sim.isPlaying = false;
           els.btnPlay.textContent = "播放";
           state.playback.frameIndex = state.observe.peakIndex;
-          state.playback.t = state.playback.frameIndex * getFrameDurationMs();
+          state.playback.t = getPlaybackTimeAtFrame(state.playback.frameIndex);
           state.playback.smoothedPose = null;
           els.timeline.value = String(state.playback.frameIndex);
           state.playback.frameFloat = state.playback.frameIndex;
@@ -3207,6 +4124,7 @@
         });
 
         els.btnReset.addEventListener("click", () => {
+          resetElegantGeneratorDefaults();
           els.interp.value = "linear";
           els.smooth.value = "0.2";
           els.ground.value = "0";
@@ -3260,8 +4178,10 @@
           window.alert(
             [
               "支持直接粘贴 C 数组 / CSV。",
-              "帧头：frameCount, 0, 0, scale, 0, intervalMs。",
-              "每帧通道：头部H、头部V、FL/FR/RR/RL大腿、FL/FR/RR/RL小腿。",
+              "步态帧头：frameCount, 0, 0, scale, 0, intervalMs。",
+              "技能帧头：period, expectedRoll, expectedPitch, angleDataRatio, loopStart, loopEnd, loopCount。",
+              "步态每帧 10 通道；技能每帧 14 通道（前 10 个仍为头部+四腿角度）。",
+              "“生成左前瘸腿步态”会读取当前前两帧，把左前腿锁在第二帧姿态，并用其余三条腿生成一套循环步态。",
               "点击腿可切换观测对象（高度曲线、轨迹、负载估算会同步切换）。",
             ].join("\n")
           );
@@ -3871,7 +4791,7 @@
           }
 
           if (!state.sim.loop) {
-            const totalMs = state.dataset.frames.length * getFrameDurationMs();
+            const totalMs = getTotalPlaybackDurationMs();
             if (state.playback.t >= totalMs) {
               state.sim.isPlaying = false;
               els.btnPlay.textContent = "播放";
@@ -4020,7 +4940,7 @@
           state.sim.isPlaying = false;
           els.btnPlay.textContent = "播放";
           state.playback.frameIndex = idx;
-          state.playback.t = idx * getFrameDurationMs();
+          state.playback.t = getPlaybackTimeAtFrame(idx);
           state.playback.smoothedPose = null;
           els.timeline.value = String(idx);
           updatePoseFromTimeline();
